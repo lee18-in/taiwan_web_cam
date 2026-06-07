@@ -1,7 +1,11 @@
 
 <!-- 
-# 台灣即時影像戰情室 - 雛形
+# 台灣即時影像戰情室 
  https://lee18-in.github.io/taiwan_web_cam/
+
+ Copyright (c) 2026 lee18.in
+ Released under the MIT License.
+ See the LICENSE file for details.
 
 ## 功能說明
 
@@ -222,12 +226,13 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         /* === 控制面板的樣式 === */
         .control-panel {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 65px; /* 墊高一點，放在讀我與授權連結上方 */
+            right: 15px;
             z-index: 1000;
             display: flex;
+            flex-direction: column;
             gap: 12px;
+            transition: right 0.2s ease-out; /* 讓按鈕也能跟著影片牆滑順移動 */
         }
         .radar-btn {
             background-color: rgba(18, 18, 18, 0.9);
@@ -245,6 +250,29 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             background-color: #ffcc00;
             color: #000;
         }
+
+        /* === 頁腳連結樣式 === */
+        .footer-links {
+            position: fixed;
+            bottom: 25px; /* 避開 Leaflet 預設版權宣告 */
+            right: 15px;
+            z-index: 1000;
+            background-color: rgba(18, 18, 18, 0.8);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid rgba(0, 255, 204, 0.35);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            transition: right 0.2s ease-out;
+        }
+        .footer-links a { color: #00ffcc; text-decoration: none; font-weight: bold; margin: 0 4px; }
+        .footer-links a:hover { color: #fff; text-decoration: underline; }
+
+        /* 確保地圖原生版權宣告也能動態推移不被擋住 */
+        .leaflet-bottom.leaflet-right {
+            transition: right 0.2s ease-out;
+        }
     </style>
 </head>
 <body>
@@ -256,7 +284,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
     <svg id="connection-layer" class="connection-layer" aria-hidden="true"></svg>
 
     <!-- 臨時疊圖校正工具 (開發輔助用) -->
-    <div id="calibration-tool" style="position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.85); color: white; padding: 15px; z-index: 2000; border-radius: 8px; border: 1px solid #ffcc00; display: none; backdrop-filter: blur(4px); box-shadow: 0 10px 20px rgba(0,0,0,0.8);">
+    <div id="calibration-tool" style="position: fixed; bottom: 115px; right: 20px; background: rgba(0,0,0,0.85); color: white; padding: 15px; z-index: 2000; border-radius: 8px; border: 1px solid #ffcc00; display: none; backdrop-filter: blur(4px); box-shadow: 0 10px 20px rgba(0,0,0,0.8); transition: right 0.2s ease-out;">
         <h4 style="margin: 0 0 10px 0; color: #ffcc00; text-align: center;">🛠️ 雷達圖校正工具</h4>
         <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; font-size: 14px;">
             <label>北(上)</label>
@@ -282,9 +310,15 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
     </div>
 
     <!-- 控制面板 -->
-    <div class="control-panel">
+    <div id="control-panel" class="control-panel">
         <button id="radar-btn" class="radar-btn">🌦️ 切換雷達回波</button>
         <button id="calib-btn" class="radar-btn">⚙️ 雷達校正</button>
+    </div>
+
+    <!-- 頁腳資訊 (Readme & License) -->
+    <div id="footer-links" class="footer-links">
+        <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank">📖 讀我 (Readme)</a> | 
+        <a href="https://github.com/lee18-in/taiwan_web_cam/blob/main/LICENSE" target="_blank">📄 MIT 授權</a>
     </div>
 
     <!-- 引入 Leaflet 的 JavaScript -->
@@ -315,10 +349,10 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         // - 變胖/變寬：把西 (117.500) 調小，或東 (125.000) 調大。 (變瘦則反之)
         // - 變高/拉長：把北 (26.500) 調大，或南 (19.000) 調小。 (變矮則反之)
         const radarBounds = [[20.455, 118.000], [26.480, 124.000]];  // [ [南緯(下), 西經(左)], [北緯(上), 東經(右)] ]
-        const radarOverlay = L.imageOverlay(radarImageUrl, radarBounds, {
+        const radarOverlay = L.imageOverlay(`${radarImageUrl}?t=${new Date().getTime()}`, radarBounds, {
             opacity: 0.2, // 設定微透明才不會完全擋住底圖
             interactive: false // 允許滑鼠穿透點擊底下的地標
-        });
+        }).addTo(map);
 
         // 3. 建立攝影機資料庫，包含座標、YouTube ID 與 顯示層級 (Level)
         const webcams = [
@@ -566,6 +600,8 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 direction: 'top', // 顯示在點的上方
                 offset: [0, -5],  // 往上微調一點點避免擋住紅點
                 opacity: 0.9      // 稍微有點透明度的質感
+            }).on('click', () => {
+                map.setView([cam.lat, cam.lng], map.getZoom() + 2);
             });
         }
 
@@ -574,7 +610,25 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         function renderVideoWall() {
             const selectedCams = getDisplayCams();
             const newRenderedCamIds = selectedCams.map(cam => cam.videoId).join(',');
+            const { westCams, eastCams } = splitWallCams(selectedCams);
+
+            const leftWall = document.getElementById('left-video-wall');
+            const rightWall = document.getElementById('right-video-wall');
             
+            // 確保每次呼叫時 (包含視窗縮放) 皆會更新影片牆的寬度，並動態調整右下角工具位置以避免被影片牆遮擋
+            const rightWidthStr = eastCams.length ? calculateWallWidth(eastCams.length) : '0px';
+            leftWall.style.width = westCams.length ? calculateWallWidth(westCams.length) : '0px';
+            rightWall.style.width = rightWidthStr;
+
+            const footerLinks = document.getElementById('footer-links');
+            if (footerLinks) footerLinks.style.right = `calc(${rightWidthStr} + 15px)`;
+            const controlPanel = document.getElementById('control-panel');
+            if (controlPanel) controlPanel.style.right = `calc(${rightWidthStr} + 15px)`;
+            const calibTool = document.getElementById('calibration-tool');
+            if (calibTool) calibTool.style.right = `calc(${rightWidthStr} + 20px)`;
+            const leafletControl = document.querySelector('.leaflet-bottom.leaflet-right');
+            if (leafletControl) leafletControl.style.right = rightWidthStr;
+
             // 若畫面上要顯示的攝影機名單沒有改變，就不重新渲染 DOM，避免影片頻繁中斷與重新載入
             if (currentRenderedCamIds === newRenderedCamIds) {
                 updateMarkersVisibility(selectedCams);
@@ -583,17 +637,12 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             }
             currentRenderedCamIds = newRenderedCamIds;
 
-            const leftWall = document.getElementById('left-video-wall');
-            const rightWall = document.getElementById('right-video-wall');
-            const { westCams, eastCams } = splitWallCams(selectedCams);
-
             [
                 { wall: leftWall, tiles: westCams },
                 { wall: rightWall, tiles: eastCams }
             ].forEach(({ wall, tiles }) => {
                 wall.style.display = tiles.length ? 'grid' : 'none';
                 wall.style.gridTemplateRows = `repeat(${Math.max(tiles.length, 1)}, auto)`;
-                wall.style.width = calculateWallWidth(tiles.length);
                 wall.innerHTML = tiles.map(cam => `
                     <div class="video-tile" data-lat="${cam.lat}" data-lng="${cam.lng}">
                         <div class="video-tile-title">🔴 ${escapeHtml(cam.name)}</div>
@@ -633,7 +682,11 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 </div>
             `;
 
-            cam.marker = L.marker([cam.lat, cam.lng]).bindPopup(popupContent);
+            cam.marker = L.marker([cam.lat, cam.lng])
+                .bindPopup(popupContent)
+                .on('click', () => {
+                    map.setView([cam.lat, cam.lng], map.getZoom() + 2);
+                });
         }
     );
 
@@ -692,7 +745,8 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         // ==========================================
         const radarBtn = document.getElementById('radar-btn');
         const calibrationTool = document.getElementById('calibration-tool');
-        let isRadarVisible = false;
+        let isRadarVisible = true;
+        radarBtn.classList.add('active');
         radarBtn.addEventListener('click', () => {
             isRadarVisible = !isRadarVisible;
             if (isRadarVisible) {

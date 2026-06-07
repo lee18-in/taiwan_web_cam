@@ -1,4 +1,11 @@
+
+
+
 # 🇹🇼 台灣即時影像戰情室 (Taiwan Web Cam War Room)
+
+![Language](https://img.shields.io/badge/Language-zh--TW-blue.svg)
+![Encoding](https://img.shields.io/badge/Encoding-UTF--8-lightgrey.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 > 結合台灣地圖與各地「鏡頭君」即時影像，打造如兵棋推演般的戰情室儀表板，讓您一眼掌握全台各地實況。
 
@@ -8,34 +15,32 @@
 
 ## ✨ 功能特色
 
-- 🗺️ **互動式台灣地圖**：直觀的地圖介面，快速定位並尋找特定區域的攝影機。
-- 📹 **即時影像疊加**：直接在地圖上觀看各地 YouTube 即時直播畫面。
-- 🎯 **戰情室體驗**：高科技感的 UI 介面設計，打造專業的兵棋推演視覺感受。
-- 📡 **豐富的資料來源**：彙整全台各熱門景點、國道及省道等鏡頭君直播。
-
-<!-- 
-## 實做影片清單
-### 第一級 大地圖時 要顯示的影片框架
-https://www.youtube.com/watch?v=91PfFoqvuUk #一級 桃園國際機場即時影像
-https://www.youtube.com/watch?v=z_fY1pj1VBw #一級 象山看台北
-https://www.youtube.com/watch?v=lhXXhDyjFtI #一級 台中望高寮
-https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
--->
-
+- 🗺️ **互動式台灣地圖**：採用 Leaflet.js 與 CartoDB 暗黑戰情室風格底圖，快速定位全台「鏡頭君」。
+- 📹 **動態即時影像牆**：依據地圖可視範圍與縮放位置，自動於畫面兩側展開多分割 YouTube 直播牆。
+- 🎯 **沉浸式戰情室體驗**：具備 SVG 雷射連線動態指示功能，將兩側影片精準對應至地圖上的實體位置。
+- 🌦️ **即時氣象雷達疊圖**：整合中央氣象署雷達回波圖，並內建開發者疊圖校正工具。
+- 📡 **層級化資料來源**：彙整全台各熱門景點、國道及省道路況，並區分 1~4 級優先顯示權重。
 
 ## 🔗 資料來源
 
 - 即時影像播放清單來源：[台灣各地鏡頭君 YouTube Playlist](https://www.youtube.com/playlist?list=PLz7JwxFER5rzcxAcOO6Xf1cWtFwOJmZI4)
+- 氣象雷達圖來源：交通部中央氣象署 (CWA)
 
-## 🛠️ 預期技術棧
+## 🛠️ 技術棧 (Tech Stack)
 
-- **前端框架**: HTML / CSS / JavaScript (或 React / Vue)
-- **地圖圖資**: Leaflet.js 或 Google Maps API
-- **影音串流**: YouTube Iframe API
+- **前端開發**: 原生 HTML / CSS / Vanilla JavaScript
+- **地圖圖資**: Leaflet.js + CartoDB Dark Matter
+- **影音串流**: YouTube Iframe API (搭配 Lazy Loading 最佳化)
 
 ## 🚀 未來規劃 (Roadmap)
 
-- [ ] 建立基礎地圖與標記點。
-- [ ] 實作點擊標記即彈出 YouTube 播放器的功能。
-- [ ] 實作多畫面分割的「全視角」監控模式。
-- [ ] 整合中央氣象署 API，同步顯示各區即時天氣。
+- [x] 建立基礎地圖與標記點。
+- [x] 實作點擊標記即彈出 YouTube 播放器的功能。
+- [x] 實作多畫面分割的動態「全視角」影像牆與對齊連線。
+- [x] 整合中央氣象署資料，疊加即時雷達回波圖。
+- [ ] 實作「鏡頭優先等級」自訂面板，並結合 LocalStorage 儲存使用者偏好。
+- [ ] 加入更多氣象與路況資訊（如累積雨量圖、國道壅塞地圖）。
+
+## 📄 授權條款 (License)
+
+本專案採用 [MIT License](LICENSE) 開源授權 - 作者：lee18.in 
