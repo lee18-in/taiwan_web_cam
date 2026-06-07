@@ -173,6 +173,19 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             }
         }
 
+        /* === 手機版專屬排版 (上影片，下地圖) === */
+        @media (max-width: 768px) {
+            #map {
+                position: absolute;
+                top: 50vh;
+                height: 50vh;
+                width: 100vw;
+            }
+            .video-tile-title {
+                font-size: 11px; /* 手機版標題稍微縮小 */
+            }
+        }
+
         /* 調整 Leaflet Popup 的預設樣式，讓它能好好塞進影片 */
         .leaflet-popup-content-wrapper {
             background-color: #1e1e1e;
@@ -427,7 +440,8 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
 
 
         const youtubeOrigin = window.location.origin === 'null' ? '' : `&origin=${encodeURIComponent(window.location.origin)}`;
-        const MAX_VIDEO_TILES = 10;
+        const isMobile = () => window.innerWidth <= 768;
+        const getMaxVideoTiles = () => isMobile() ? 4 : 10; // 手機版最多顯示 4 個
 
         function createYoutubeEmbedUrl(videoId, autoplay = false) {
             const autoplayParam = autoplay ? '&autoplay=1' : '';
@@ -458,8 +472,13 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                     const targetY = mapRect.top + targetPoint.y;
                     const tileMidY = tileRect.top + tileRect.height / 2;
                     const tileMidX = tileRect.left + tileRect.width / 2;
-                    const startX = tileMidX < targetX ? tileRect.right : tileRect.left;
-                    const startY = tileMidY;
+                    
+                    let startX = tileMidX < targetX ? tileRect.right : tileRect.left;
+                    let startY = tileMidY;
+                    if (isMobile()) { // 手機版雷射從影片下方射出
+                        startX = tileMidX;
+                        startY = tileRect.bottom;
+                    }
 
                     return `
                         <line class="connection-line" x1="${startX}" y1="${startY}" x2="${targetX}" y2="${targetY}"></line>
@@ -511,19 +530,22 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         }
 
         function selectWallCams(cams) {
+            const maxTiles = getMaxVideoTiles();
             const camsWithIndex = cams.map((cam, index) => ({ ...cam, index }));
 
-            if (camsWithIndex.length <= MAX_VIDEO_TILES) {
+            if (camsWithIndex.length <= maxTiles) {
                 return camsWithIndex;
             }
 
             const sortedCams = camsWithIndex
                 .sort((a, b) => a.level - b.level || a.index - b.index);
 
-            return sortedCams.slice(0, MAX_VIDEO_TILES);
+            return sortedCams.slice(0, maxTiles);
         }
 
         function splitWallCams(cams) {
+            if (isMobile()) return { westCams: cams, eastCams: [] }; // 手機版所有影片集中在同一個面板
+
             const westToEastCams = [...cams].sort((a, b) => a.lng - b.lng || b.lat - a.lat);
             const leftCount = cams.length < 4 ? 0 : Math.ceil(westToEastCams.length / 2);
 
@@ -534,6 +556,11 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         }
 
         function getVideoWallRects(westCount, eastCount) {
+            if (isMobile()) {
+                if (westCount === 0) return [];
+                return [{ left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight / 2 }];
+            }
+
             const top = 0;
             const bottom = window.innerHeight;
             const rects = [];
@@ -610,22 +637,37 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         function renderVideoWall() {
             const selectedCams = getDisplayCams();
             const newRenderedCamIds = selectedCams.map(cam => cam.videoId).join(',');
+            const mobile = isMobile();
             const { westCams, eastCams } = splitWallCams(selectedCams);
 
             const leftWall = document.getElementById('left-video-wall');
             const rightWall = document.getElementById('right-video-wall');
             
             // 確保每次呼叫時 (包含視窗縮放) 皆會更新影片牆的寬度，並動態調整右下角工具位置以避免被影片牆遮擋
-            const rightWidthStr = eastCams.length ? calculateWallWidth(eastCams.length) : '0px';
-            leftWall.style.width = westCams.length ? calculateWallWidth(westCams.length) : '0px';
+            const rightWidthStr = eastCams.length && !mobile ? calculateWallWidth(eastCams.length) : '0px';
+            leftWall.style.width = westCams.length && !mobile ? calculateWallWidth(westCams.length) : (mobile ? '100vw' : '0px');
             rightWall.style.width = rightWidthStr;
 
+            // 針對手機板將所有影片牆重置為上方半視窗的網格佈局
+            if (mobile) {
+                leftWall.style.height = '50vh';
+                leftWall.style.borderRight = 'none';
+                leftWall.style.borderBottom = '1px solid rgba(0, 255, 204, 0.35)';
+                leftWall.style.gridTemplateColumns = westCams.length > 1 ? '1fr 1fr' : '1fr';
+                leftWall.style.gridTemplateRows = westCams.length > 2 ? '1fr 1fr' : '1fr';
+            } else {
+                leftWall.style.height = '100vh';
+                leftWall.style.borderRight = '1px solid rgba(0, 255, 204, 0.35)';
+                leftWall.style.borderBottom = 'none';
+                leftWall.style.gridTemplateColumns = '1fr';
+            }
+
             const footerLinks = document.getElementById('footer-links');
-            if (footerLinks) footerLinks.style.right = `calc(${rightWidthStr} + 15px)`;
+            if (footerLinks) footerLinks.style.right = mobile ? '15px' : `calc(${rightWidthStr} + 15px)`;
             const controlPanel = document.getElementById('control-panel');
-            if (controlPanel) controlPanel.style.right = `calc(${rightWidthStr} + 15px)`;
+            if (controlPanel) controlPanel.style.right = mobile ? '15px' : `calc(${rightWidthStr} + 15px)`;
             const calibTool = document.getElementById('calibration-tool');
-            if (calibTool) calibTool.style.right = `calc(${rightWidthStr} + 20px)`;
+            if (calibTool) calibTool.style.right = mobile ? '20px' : `calc(${rightWidthStr} + 20px)`;
             const leafletControl = document.querySelector('.leaflet-bottom.leaflet-right');
             if (leafletControl) leafletControl.style.right = rightWidthStr;
 
@@ -642,7 +684,9 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 { wall: rightWall, tiles: eastCams }
             ].forEach(({ wall, tiles }) => {
                 wall.style.display = tiles.length ? 'grid' : 'none';
-                wall.style.gridTemplateRows = `repeat(${Math.max(tiles.length, 1)}, auto)`;
+                if (!mobile) {
+                    wall.style.gridTemplateRows = `repeat(${Math.max(tiles.length, 1)}, auto)`;
+                }
                 wall.innerHTML = tiles.map(cam => `
                     <div class="video-tile" data-lat="${cam.lat}" data-lng="${cam.lng}">
                         <div class="video-tile-title">🔴 ${escapeHtml(cam.name)}</div>
@@ -734,6 +778,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         map.on('moveend', renderVideoWall);
         map.on('zoom move', renderConnectorLines);
         window.addEventListener('resize', () => {
+            map.invalidateSize(); // 強制讓 Leaflet 重新計算地圖容器大小 (例如旋轉手機時)
             renderVideoWall();
             renderConnectorLines();
         });
