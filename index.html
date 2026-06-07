@@ -652,14 +652,6 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 leftWall.style.gridTemplateRows = westCams.length > 2 ? 'auto auto' : 'auto';
                 leftWall.style.gridAutoRows = 'minmax(0, auto)';
                 leftWall.style.alignContent = 'start'; // 讓影片群組緊貼上方，消除平均分配空間產生的縫隙
-
-                const wallHeight = leftWall.getBoundingClientRect().height;
-                mapEl.style.position = 'fixed';
-                mapEl.style.top = `${wallHeight}px`;
-                mapEl.style.left = '0';
-                mapEl.style.right = '0';
-                mapEl.style.bottom = '0';
-                mapEl.style.height = `${window.innerHeight - wallHeight}px`;
             } else {
                 leftWall.style.height = '100vh';
                 leftWall.style.position = '';
@@ -691,9 +683,21 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             const leafletLeftControl = document.querySelector('.leaflet-left');
             if (leafletLeftControl) leafletLeftControl.style.left = leftWidthStr;
 
+            const updateMobileMapPosition = () => {
+                if (!mobile) return;
+                const wallHeight = leftWall.getBoundingClientRect().height;
+                mapEl.style.position = 'fixed';
+                mapEl.style.top = `${wallHeight}px`;
+                mapEl.style.left = '0';
+                mapEl.style.right = '0';
+                mapEl.style.bottom = '0';
+                mapEl.style.height = `${window.innerHeight - wallHeight}px`;
+            };
+
             // 若畫面上要顯示的攝影機名單沒有改變，就不重新渲染 DOM，避免影片頻繁中斷與重新載入
             if (currentRenderedCamIds === newRenderedCamIds) {
                 updateMarkersVisibility(selectedCams);
+                updateMobileMapPosition();
                 requestAnimationFrame(renderConnectorLines);
                 return;
             }
@@ -723,6 +727,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                     </div>
                 `).join('');
             });
+            updateMobileMapPosition();
             updateMarkersVisibility(selectedCams);
             requestAnimationFrame(renderConnectorLines);
         }
