@@ -639,12 +639,14 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 leftWall.style.borderRight = 'none';
                 leftWall.style.borderBottom = '1px solid rgba(0, 255, 204, 0.35)';
                 leftWall.style.gridTemplateColumns = westCams.length > 1 ? '1fr 1fr' : '1fr';
-                leftWall.style.gridTemplateRows = westCams.length > 2 ? '1fr 1fr' : '1fr';
+                leftWall.style.gridTemplateRows = westCams.length > 2 ? 'auto auto' : 'auto';
+                leftWall.style.alignContent = 'start'; // 讓影片群組緊貼上方，消除平均分配空間產生的縫隙
             } else {
                 leftWall.style.height = '100vh';
                 leftWall.style.borderRight = '1px solid rgba(0, 255, 204, 0.35)';
                 leftWall.style.borderBottom = 'none';
                 leftWall.style.gridTemplateColumns = '1fr';
+                leftWall.style.alignContent = 'center';
             }
 
             const footerLinks = document.getElementById('footer-links');
