@@ -86,10 +86,10 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             top: 0;
             bottom: 0;
             background-color: #121212;
-            padding: 10px;
+            padding: 0;
             box-sizing: border-box;
             display: grid;
-            gap: 8px;
+            gap: 0;
             align-content: center;
             z-index: 500;
             pointer-events: auto;
@@ -131,10 +131,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         .video-tile {
             min-height: 0;
             overflow: hidden;
-            background-color: #101820;
-            border: 1px solid rgba(0, 255, 204, 0.35);
-            border-radius: 6px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            background-color: #000;
             pointer-events: auto;
         }
 
@@ -185,11 +182,15 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 font-size: 6px; /* 手機版標題稍微縮小 */
             }
             .footer-links {
-                bottom: 6px;
-                padding: 5px 6px;
+                bottom: 12px;
+                padding: 5px 8px;
                 font-size:6px;
-                line-height: 1;
+                line-height: 1.5;
                 text-align: right;
+            }
+            /* 手機版：縮小地圖右下角版權與選單的字體 */
+            .leaflet-control-attribution {
+                font-size: 8px !important;
             }
         }
 
@@ -250,11 +251,11 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             right: 15px;
             z-index: 1000;
             background-color: rgba(18, 18, 18, 0.8);
-            padding: 8px 8px;
+            padding: 8px 12px;
             border-radius: 6px;
             font-size: 13px;
             border: 1px solid rgba(0, 255, 204, 0.35);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
             transition: right 0.2s ease-out;
         }
@@ -263,9 +264,18 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         .footer-links a:hover { color: #fff; text-decoration: underline; }
         .footer-links a.active { color: #ffcc00; }
 
-        /* 確保地圖原生版權宣告也能動態推移不被擋住 */
+        /* 確保地圖原生版權宣告與縮放控制能動態推移不被擋住 */
         .leaflet-bottom.leaflet-right {
             transition: right 0.2s ease-out;
+        }
+        .leaflet-left {
+            transition: left 0.2s ease-out;
+        }
+        
+        /* === 地圖右下角版權宣告字體大小 (電腦版) === */
+        .leaflet-control-attribution {
+            font-size: 11px !important;
+            background: rgba(0, 0, 0, 0.5) !important; /* 順便讓底色變半透明暗色，更符合戰情室風格 */
         }
     </style>
 </head>
@@ -318,7 +328,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         // 2. 加入開源的地圖圖層 (OpenStreetMap)
         // 這裡為了有點戰情室的感覺，我們使用 CartoDB 的暗色主題地圖 (Dark Matter)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="color: #; margin: 0 3px;"> | 影像版權屬建置單位所有 | </span>  <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank"> 讀我</a>   | <a id="calib-btn" title="雷達校正工具">⚙️</a>  ',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="color: #; margin: 0 3px;">影像版權屬建置單位所有</span>  <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank"> 讀我</a>  <a id="calib-btn" title="雷達校正工具">⚙️</a>  ',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
@@ -468,8 +478,8 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             if (!tileCount) return 300;
 
             const titleHeight = 24;
-            const verticalMargin = 20;
-            const tileGap = 8;
+            const verticalMargin = 0;
+            const tileGap = 0;
             const centerMapMinWidth = 360;
             const availableColumnHeight = window.innerHeight - verticalMargin - tileGap * (tileCount - 1);
             const targetFrameHeight = Math.max(90, (availableColumnHeight / tileCount) - titleHeight);
@@ -493,7 +503,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         }
 
         function calculateWallWidth(tileCount) {
-            return `${calculateWallWidthValue(tileCount) + 20}px`;
+            return `${calculateWallWidthValue(tileCount)}px`;
         }
 
         function getLevelVisibleCams() {
@@ -542,7 +552,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             if (westCount) {
                 rects.push({
                     left: 0,
-                    right: calculateWallWidthValue(westCount) + 20,
+                    right: calculateWallWidthValue(westCount),
                     top,
                     bottom
                 });
@@ -550,7 +560,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
 
             if (eastCount) {
                 rects.push({
-                    left: window.innerWidth - (calculateWallWidthValue(eastCount) + 20),
+                    left: window.innerWidth - calculateWallWidthValue(eastCount),
                     right: window.innerWidth,
                     top,
                     bottom
@@ -618,8 +628,9 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             const rightWall = document.getElementById('right-video-wall');
             
             // 確保每次呼叫時 (包含視窗縮放) 皆會更新影片牆的寬度，並動態調整右下角工具位置以避免被影片牆遮擋
+            const leftWidthStr = westCams.length && !mobile ? calculateWallWidth(westCams.length) : '0px';
             const rightWidthStr = eastCams.length && !mobile ? calculateWallWidth(eastCams.length) : '0px';
-            leftWall.style.width = westCams.length && !mobile ? calculateWallWidth(westCams.length) : (mobile ? '100vw' : '0px');
+            leftWall.style.width = mobile ? '100vw' : leftWidthStr;
             rightWall.style.width = rightWidthStr;
 
             // 針對手機板將所有影片牆重置為上方半視窗的網格佈局
@@ -642,6 +653,8 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             if (calibTool) calibTool.style.right = mobile ? '20px' : `calc(${rightWidthStr} + 20px)`;
             const leafletControl = document.querySelector('.leaflet-bottom.leaflet-right');
             if (leafletControl) leafletControl.style.right = rightWidthStr;
+            const leafletLeftControl = document.querySelector('.leaflet-left');
+            if (leafletLeftControl) leafletLeftControl.style.left = leftWidthStr;
 
             // 若畫面上要顯示的攝影機名單沒有改變，就不重新渲染 DOM，避免影片頻繁中斷與重新載入
             if (currentRenderedCamIds === newRenderedCamIds) {
