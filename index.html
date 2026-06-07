@@ -182,7 +182,14 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 width: 100vw;
             }
             .video-tile-title {
-                font-size: 11px; /* 手機版標題稍微縮小 */
+                font-size: 6px; /* 手機版標題稍微縮小 */
+            }
+            .footer-links {
+                bottom: 12px;
+                padding: 5px 8px;
+                font-size:6px;
+                line-height: 1.5;
+                text-align: right;
             }
         }
 
@@ -236,34 +243,6 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             text-decoration: underline;
         }
 
-        /* === 控制面板的樣式 === */
-        .control-panel {
-            position: fixed;
-            bottom: 65px; /* 墊高一點，放在讀我與授權連結上方 */
-            right: 15px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            transition: right 0.2s ease-out; /* 讓按鈕也能跟著影片牆滑順移動 */
-        }
-        .radar-btn {
-            background-color: rgba(18, 18, 18, 0.9);
-            color: #ffcc00;
-            border: 1px solid rgba(255, 204, 0, 0.5);
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-            transition: all 0.2s;
-        }
-        .radar-btn:hover, .radar-btn.active {
-            background-color: #ffcc00;
-            color: #000;
-        }
-
         /* === 頁腳連結樣式 === */
         .footer-links {
             position: fixed;
@@ -280,7 +259,9 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             transition: right 0.2s ease-out;
         }
         .footer-links a { color: #00ffcc; text-decoration: none; font-weight: bold; margin: 0 4px; }
+        .footer-links a { cursor: pointer; color: #00ffcc; text-decoration: none; font-weight: bold; margin: 0 4px; }
         .footer-links a:hover { color: #fff; text-decoration: underline; }
+        .footer-links a.active { color: #ffcc00; }
 
         /* 確保地圖原生版權宣告也能動態推移不被擋住 */
         .leaflet-bottom.leaflet-right {
@@ -322,17 +303,9 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         </div>
     </div>
 
-    <!-- 控制面板 -->
-    <div id="control-panel" class="control-panel">
-        <button id="radar-btn" class="radar-btn">🌦️ 切換雷達回波</button>
-        <button id="calib-btn" class="radar-btn">⚙️ 雷達校正</button>
-    </div>
-
-    <!-- 頁腳資訊 (Readme & License) -->
+    <!-- 頁腳資訊與控制選項 -->
     <div id="footer-links" class="footer-links">
-        <span style="color: #aaa; margin-right: 5px;">⚠️ 影像版權屬原建置單位所有</span> |
-        <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank">📖 讀我 (Readme)</a> | 
-        <a href="https://github.com/lee18-in/taiwan_web_cam/blob/main/LICENSE" target="_blank">📄 MIT 授權</a>
+        <a id="radar-btn" title="開關雷達回波">🌦️切換</a>
     </div>
 
     <!-- 引入 Leaflet 的 JavaScript -->
@@ -345,7 +318,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         // 2. 加入開源的地圖圖層 (OpenStreetMap)
         // 這裡為了有點戰情室的感覺，我們使用 CartoDB 的暗色主題地圖 (Dark Matter)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="color: #; margin: 0 3px;">影像版權屬建置單位所有</span>  <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank"> 讀我</a>  <a id="calib-btn" title="雷達校正工具">⚙️</a>  ',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
@@ -665,8 +638,6 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
 
             const footerLinks = document.getElementById('footer-links');
             if (footerLinks) footerLinks.style.right = mobile ? '15px' : `calc(${rightWidthStr} + 15px)`;
-            const controlPanel = document.getElementById('control-panel');
-            if (controlPanel) controlPanel.style.right = mobile ? '15px' : `calc(${rightWidthStr} + 15px)`;
             const calibTool = document.getElementById('calibration-tool');
             if (calibTool) calibTool.style.right = mobile ? '20px' : `calc(${rightWidthStr} + 20px)`;
             const leafletControl = document.querySelector('.leaflet-bottom.leaflet-right');
