@@ -84,7 +84,7 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         .video-wall {
             position: fixed;
             top: 0;
-            bottom: 0;
+            height: 100vh;
             background-color: #121212;
             padding: 0;
             box-sizing: border-box;
@@ -173,10 +173,14 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         /* === 手機版專屬排版 (上影片，下地圖) === */
         @media (max-width: 768px) {
             #map {
-                position: absolute;
+                position: fixed;
                 top: 50vh;
-                height: 50vh;
+                bottom: 0;
+                height: auto;
                 width: 100vw;
+            }
+            .video-wall {
+                bottom: auto;
             }
             .video-tile-title {
                 font-size: 6px; /* 手機版標題稍微縮小 */
@@ -634,19 +638,48 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
             rightWall.style.width = rightWidthStr;
 
             // 針對手機板將所有影片牆重置為上方半視窗的網格佈局
+            const mapEl = document.getElementById('map');
+
             if (mobile) {
-                leftWall.style.height = '50vh';
+                leftWall.style.height = 'auto';
+                leftWall.style.position = 'fixed';
+                leftWall.style.top = '0';
+                leftWall.style.left = '0';
+                leftWall.style.right = '0';
                 leftWall.style.borderRight = 'none';
                 leftWall.style.borderBottom = '1px solid rgba(0, 255, 204, 0.35)';
                 leftWall.style.gridTemplateColumns = westCams.length > 1 ? '1fr 1fr' : '1fr';
                 leftWall.style.gridTemplateRows = westCams.length > 2 ? 'auto auto' : 'auto';
+                leftWall.style.gridAutoRows = 'minmax(0, auto)';
                 leftWall.style.alignContent = 'start'; // 讓影片群組緊貼上方，消除平均分配空間產生的縫隙
+
+                const wallHeight = leftWall.getBoundingClientRect().height;
+                mapEl.style.position = 'fixed';
+                mapEl.style.top = `${wallHeight}px`;
+                mapEl.style.left = '0';
+                mapEl.style.right = '0';
+                mapEl.style.bottom = '0';
+                mapEl.style.height = `${window.innerHeight - wallHeight}px`;
             } else {
                 leftWall.style.height = '100vh';
+                leftWall.style.position = '';
+                leftWall.style.top = '';
+                leftWall.style.left = '';
+                leftWall.style.right = '';
                 leftWall.style.borderRight = '1px solid rgba(0, 255, 204, 0.35)';
                 leftWall.style.borderBottom = 'none';
                 leftWall.style.gridTemplateColumns = '1fr';
+                leftWall.style.gridAutoRows = '';
                 leftWall.style.alignContent = 'center';
+
+                if (mapEl) {
+                    mapEl.style.position = '';
+                    mapEl.style.top = '';
+                    mapEl.style.left = '';
+                    mapEl.style.right = '';
+                    mapEl.style.bottom = '';
+                    mapEl.style.height = '100vh';
+                }
             }
 
             const footerLinks = document.getElementById('footer-links');
