@@ -26,6 +26,8 @@
 - 即時影像播放清單來源：[台灣各地鏡頭君 YouTube Playlist](https://www.youtube.com/playlist?list=PLz7JwxFER5rzcxAcOO6Xf1cWtFwOJmZI4)
 - 氣象雷達圖來源：交通部中央氣象署 (CWA)
 
+> ⚠️ **版權聲明**：本專案所彙整之所有即時影像（鏡頭君）之著作權與所有權，皆屬於原建置與轉播單位（包含但不限於交通部公路局、各縣市政府、風景區管理處等）。本專案僅透過 YouTube Iframe API 提供嵌入播放服務，作為公益與開源交流使用，不擁有亦不宣稱擁有其任何影像版權。
+
 ## 🛠️ 技術棧 (Tech Stack)
 
 - **前端開發**: 原生 HTML / CSS / Vanilla JavaScript
