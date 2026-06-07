@@ -174,16 +174,23 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
         @media (max-width: 768px) {
             #map {
                 position: fixed;
-                top: 50vh;
+                top: 0;
                 bottom: 0;
                 height: auto;
                 width: 100vw;
             }
             .video-wall {
                 bottom: auto;
+                width: 100vw;
+                grid-template-columns: 1fr 1fr;
+                grid-auto-rows: minmax(0, auto);
+                grid-auto-flow: row;
+            }
+            .video-tile {
+                min-height: 0;
             }
             .video-tile-title {
-                font-size: 6px; /* 手機版標題稍微縮小 */
+                font-size: 7px; /* 手機版標題稍微縮小 */
             }
             .footer-links {
                 bottom: 12px;
@@ -648,8 +655,8 @@ https://www.youtube.com/watch?v=xxMRjVwCQ3o #二級 烘爐地即時影像
                 leftWall.style.right = '0';
                 leftWall.style.borderRight = 'none';
                 leftWall.style.borderBottom = '1px solid rgba(0, 255, 204, 0.35)';
-                leftWall.style.gridTemplateColumns = westCams.length > 1 ? '1fr 1fr' : '1fr';
-                leftWall.style.gridTemplateRows = westCams.length > 2 ? 'auto auto' : 'auto';
+                leftWall.style.gridTemplateColumns = '1fr 1fr';
+                leftWall.style.gridTemplateRows = 'auto';
                 leftWall.style.gridAutoRows = 'minmax(0, auto)';
                 leftWall.style.alignContent = 'start'; // 讓影片群組緊貼上方，消除平均分配空間產生的縫隙
             } else {
