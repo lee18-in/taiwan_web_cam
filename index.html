@@ -1,74 +1,29 @@
 
-<!-- 
-# 台灣即時影像戰情室 
+<!--
+ 台灣即時影像戰情室
  https://lee18-in.github.io/taiwan_web_cam/
-
  Copyright (c) 2026 lee18.in Andy Lee
  Released under the MIT License.
- See the LICENSE file for details.
-
-## 功能說明
-
-# 🇹🇼 台灣即時影像戰情室 (Taiwan Web Cam War Room)
-
-> 結合台灣地圖與各地「鏡頭君」即時影像，打造如兵棋推演般的戰情室儀表板，讓您一眼掌握全台各地實況。
-
-## 💡 專案簡介
-
-這是一個以網頁呈現的視覺化戰情室專案。我們以台灣地圖為基底，將全台各地的即時影像（鏡頭君）直播標記並疊加在地圖上。使用者不需要逐一切換頻道，就能像指揮官一樣，直觀且全面地總覽各地目前的天氣與路況。
-
-## ✨ 功能特色
-
-- 🗺️ **互動式台灣地圖**：直觀的地圖介面，快速定位並尋找特定區域的攝影機。
-- 📹 **即時影像疊加**：直接在地圖上觀看各地 YouTube 即時直播畫面。
-- 🎯 **戰情室體驗**：高科技感的 UI 介面設計，打造專業的兵棋推演視覺感受。
-- 📡 **豐富的資料來源**：彙整全台各熱門景點、國道及省道等鏡頭君直播。
-
-
-
-
-## 🔗 資料來源
-
-- 即時影像播放清單來源：[台灣各地鏡頭君 
-
-## 🛠️ 預期技術棧
-
-- **前端框架**: HTML / CSS / JavaScript (或 React / Vue)
-- **地圖圖資**: Leaflet.js 或 Google Maps API
-- **影音串流**: YouTube Iframe API
-
-## 🚀 未來規劃 (Roadmap)
-
-- [ ] 建立基礎地圖與標記點。
-- [ ] 實作點擊標記即彈出 YouTube 播放器的功能。
-- [ ] 實作多畫面分割的「全視角」監控模式。
-- [ ] 整合中央氣象署 API，同步顯示各區即時天氣。
-
 -->
-
-
-
 
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>即時影像雷達 by  lee18.in Andy Lee </title>
-    
-    <!-- 引入 Leaflet 的 CSS -->
+    <title>即時影像雷達 by lee18.in Andy Lee</title>
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+
     <style>
-        /* 讓網頁和地圖填滿整個螢幕 */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            background-color: #121212; /* 戰情室暗色背景 */
+            background-color: #121212;
             overflow: hidden;
         }
-        
+
         #map {
             height: 100vh;
             width: 100vw;
@@ -142,11 +97,17 @@
             text-overflow: ellipsis;
         }
 
+        @keyframes skeleton-pulse {
+            0%, 100% { background-color: #111; }
+            50% { background-color: #1e1e1e; }
+        }
+
         .video-tile-frame {
             position: relative;
             aspect-ratio: 16 / 9;
             height: auto;
-            background-color: #000;
+            background-color: #111;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
         }
 
         .video-tile-frame iframe {
@@ -158,12 +119,9 @@
         }
 
         @media (max-width: 900px) {
-            .video-wall {
-                width: 220px;
-            }
+            .video-wall { width: 220px; }
         }
 
-        /* === 手機版專屬排版 (上影片，下地圖) === */
         @media (max-width: 768px) {
             #map {
                 position: fixed;
@@ -179,43 +137,39 @@
                 grid-auto-rows: minmax(0, auto);
                 grid-auto-flow: row;
             }
-            .video-tile {
-                min-height: 0;
-            }
-            .video-tile-title {
-                font-size: 7px; /* 手機版標題稍微縮小 */
-            }
+            .video-tile { min-height: 0; }
+            .video-tile-title { font-size: 7px; }
             .footer-links {
                 bottom: 12px;
                 padding: 5px 8px;
-                font-size:6px;
+                font-size: 6px;
                 line-height: 1.5;
                 text-align: right;
             }
-            /* 手機版：縮小地圖右下角版權與選單的字體 */
-            .leaflet-control-attribution {
-                font-size: 8px !important;
-            }
+            .leaflet-control-attribution { font-size: 8px !important; }
         }
 
-        /* 調整 Leaflet Popup 的預設樣式，讓它能好好塞進影片 */
         .leaflet-popup-content-wrapper {
             background-color: #1e1e1e;
             color: #fff;
             border-radius: 8px;
         }
-        .leaflet-popup-tip {
-            background-color: #1e1e1e;
-        }
+        .leaflet-popup-tip { background-color: #1e1e1e; }
         .leaflet-popup-content {
-            width: 320px !important; /* 固定影片視窗寬度 */
+            width: 320px !important;
             margin: 15px;
         }
 
-        /* YouTube 影片的 RWD 容器 (16:9 比例) */
+        .cam-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #e7fff9;
+        }
+
         .video-container {
             position: relative;
-            padding-bottom: 56.25%; 
+            padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
             border-radius: 4px;
@@ -227,6 +181,7 @@
             left: 0;
             width: 100%;
             height: 100%;
+            border: 0;
         }
 
         .video-error {
@@ -237,21 +192,12 @@
             color: #ffcc00;
             font-size: 14px;
         }
-        
-        .video-error a {
-            color: #00ffcc;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        
-        .video-error a:hover {
-            text-decoration: underline;
-        }
+        .video-error a { color: #00ffcc; text-decoration: none; font-weight: bold; }
+        .video-error a:hover { text-decoration: underline; }
 
-        /* === 頁腳連結樣式 === */
         .footer-links {
             position: fixed;
-            bottom: 25px; /* 避開 Leaflet 預設版權宣告 */
+            bottom: 25px;
             right: 15px;
             z-index: 1000;
             background-color: rgba(18, 18, 18, 0.8);
@@ -263,50 +209,42 @@
             backdrop-filter: blur(4px);
             transition: right 0.2s ease-out;
         }
-        .footer-links a { color: #00ffcc; text-decoration: none; font-weight: bold; margin: 0 4px; }
         .footer-links a { cursor: pointer; color: #00ffcc; text-decoration: none; font-weight: bold; margin: 0 4px; }
         .footer-links a:hover { color: #fff; text-decoration: underline; }
         .footer-links a.active { color: #ffcc00; }
 
-        /* 確保地圖原生版權宣告與縮放控制能動態推移不被擋住 */
-        .leaflet-bottom.leaflet-right {
-            transition: right 0.2s ease-out;
-        }
-        .leaflet-left {
-            transition: left 0.2s ease-out;
-        }
-        
-        /* === 地圖右下角版權宣告字體大小 (電腦版) === */
+        .leaflet-bottom.leaflet-right { transition: right 0.2s ease-out; }
+        .leaflet-left { transition: left 0.2s ease-out; }
+
         .leaflet-control-attribution {
             font-size: 11px !important;
-            background: rgba(0, 0, 0, 0.5) !important; /* 順便讓底色變半透明暗色，更符合戰情室風格 */
+            background: rgba(0, 0, 0, 0.5) !important;
         }
     </style>
 </head>
 <body>
 
-    <!-- 地圖容器 -->
     <div id="map"></div>
     <div id="left-video-wall" class="video-wall video-wall-left"></div>
     <div id="right-video-wall" class="video-wall video-wall-right"></div>
     <svg id="connection-layer" class="connection-layer" aria-hidden="true"></svg>
 
-    <!-- 臨時疊圖校正工具 (開發輔助用) -->
+    <!-- 雷達疊圖校正工具 (網址加上 ?debug=1 才會顯示) -->
     <div id="calibration-tool" style="position: fixed; bottom: 115px; right: 20px; background: rgba(0,0,0,0.85); color: white; padding: 15px; z-index: 2000; border-radius: 8px; border: 1px solid #ffcc00; display: none; backdrop-filter: blur(4px); box-shadow: 0 10px 20px rgba(0,0,0,0.8); transition: right 0.2s ease-out;">
         <h4 style="margin: 0 0 10px 0; color: #ffcc00; text-align: center;">🛠️ 雷達圖校正工具</h4>
         <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; font-size: 14px;">
             <label>北(上)</label>
             <input type="range" id="slider-n" min="24.000" max="28.000" step="0.005" value="26.480">
             <span id="val-n" style="color:#00ffcc; width: 45px;">26.480</span>
-            
+
             <label>南(下)</label>
             <input type="range" id="slider-s" min="18.000" max="22.000" step="0.005" value="20.455">
             <span id="val-s" style="color:#00ffcc; width: 45px;">20.455</span>
-            
+
             <label>西(左)</label>
             <input type="range" id="slider-w" min="115.000" max="120.000" step="0.005" value="118.000">
             <span id="val-w" style="color:#00ffcc; width: 45px;">118.000</span>
-            
+
             <label>東(右)</label>
             <input type="range" id="slider-e" min="121.000" max="127.000" step="0.005" value="124.000">
             <span id="val-e" style="color:#00ffcc; width: 45px;">124.000</span>
@@ -317,71 +255,65 @@
         </div>
     </div>
 
-    <!-- 頁腳資訊與控制選項 -->
     <div id="footer-links" class="footer-links">
         <a id="radar-btn" title="開關雷達回波">🌦️切換</a>
     </div>
 
-    <!-- 引入 Leaflet 的 JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <script>
-        // 1. 初始化地圖，設定中心點為台灣地理中心碑 (緯度: 23.5825, 經度: 120.5855)，縮放級別為 8
+        // === 工具函式 ===
+        function debounce(fn, delay) {
+            let t;
+            return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+        }
+
+        function isValidYoutubeId(id) {
+            return typeof id === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(id);
+        }
+
+        function escapeHtml(text) {
+            return String(text).replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // 1. 初始化地圖
         const map = L.map('map').setView([23.5825, 120.5855], 8);
 
-        // 2. 加入開源的地圖圖層 (OpenStreetMap)
-        // 這裡為了有點戰情室的感覺，我們使用 CartoDB 的暗色主題地圖 (Dark Matter)
+        // 2. 暗色地圖圖層
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="color: #; margin: 0 3px;">影像版權屬建置單位所有</span>  <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank"> 讀我</a>  <a id="calib-btn" title="雷達校正工具">⚙️</a>  ',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="margin: 0 3px;">影像版權屬建置單位所有</span>  <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank">讀我</a>  <a id="calib-btn" title="雷達校正工具" style="display:none">⚙️</a>  ',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
 
-        // ==========================================
-        // 準備氣象署雷達回波圖層 (預設隱藏)
-        // ==========================================
+        // 3. 雷達回波圖層
         const radarImageUrl = 'https://www.cwa.gov.tw/Data/radar/CV1_TW_3600.png';
-        
-        // 🌧️ 手動疊圖校正區
-        // 格式：[[左下角緯度(南), 左下角經度(西)], [右上角緯度(北), 右上角經度(東)]]
-        // 建議微調幅度：每次增減 0.1 或 0.05，存檔後重新整理網頁對照台灣海岸線
-        //
-        // 【比例大小調整秘訣】
-        // - 變胖/變寬：把西 (117.500) 調小，或東 (125.000) 調大。 (變瘦則反之)
-        // - 變高/拉長：把北 (26.500) 調大，或南 (19.000) 調小。 (變矮則反之)
-        const radarBounds = [[20.455, 118.000], [26.480, 124.000]];  // [ [南緯(下), 西經(左)], [北緯(上), 東經(右)] ]
-        const radarOverlay = L.imageOverlay(`${radarImageUrl}?t=${new Date().getTime()}`, radarBounds, {
-            opacity: 0.2, // 設定微透明才不會完全擋住底圖
-            interactive: false // 允許滑鼠穿透點擊底下的地標
+        const radarBounds = [[20.455, 118.000], [26.480, 124.000]];
+        const radarOverlay = L.imageOverlay(`${radarImageUrl}?t=${Date.now()}`, radarBounds, {
+            opacity: 0.2,
+            interactive: false
         }).addTo(map);
 
-        // 3. 建立攝影機資料庫，包含座標、YouTube ID 與 顯示層級 (Level)
-        //    影片視窗框架不足時 優先顯示高等級的影片視窗，不要用縮放等級判斷
-        //    邏輯是 就算是最大的地圖 畫面上就算只有一個四級也是要顯示那個四級影片
-        //    畫面的地標數量超過影片視窗框架能容納的數量時，才會依照等級優先顯示較高等級的地標，
-        //    較低等級的地標會暫時被隱藏，直到畫面縮小到影片框架數量足夠 容納較低等級的地標時才會顯示出來
-        //    若優先權相同，則依照距離中心點較近的地標顯示優先
-        
+        // 4. 攝影機資料庫 (無效 videoId 自動過濾)
         const webcams = [
-            // === 第零級 影片視窗框架不足時 優先顯示高等級的影片視窗 ===
-//          { level: 0, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第零級" },       
+            // level 0 — 最高優先
             { level: 0, videoId: "z_fY1pj1VBw", lat: 25.0273, lng: 121.5706, name: "象山看台北" },
             { level: 0, videoId: "lhXXhDyjFtI", lat: 24.1434, lng: 120.5744, name: "台中望高寮" },
-            { level: 0, videoId: "C03Itx8iSC0", lat: 22.6274, lng: 120.2634, name: "高雄壽山情人觀景台" },   
-            { level: 0, videoId: "dQ7Sd6PGLdA", lat: 23.1263, lng: 121.4153, name: "三仙台" },            
-            
+            { level: 0, videoId: "C03Itx8iSC0", lat: 22.6274, lng: 120.2634, name: "高雄壽山情人觀景台" },
+            { level: 0, videoId: "dQ7Sd6PGLdA", lat: 23.1263, lng: 121.4153, name: "三仙台" },
 
-//          { level: 1, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第一級 次高優先權" },                 
+            // level 1
             { level: 1, videoId: "91PfFoqvuUk", lat: 25.0797, lng: 121.2342, name: "桃園國際機場" },
             { level: 1, videoId: "j2L_559nCjc", lat: 23.4388, lng: 120.6448, name: "阿里山二延平步道" },
             { level: 1, videoId: "jUnFuJSj0OU", lat: 21.9582, lng: 120.7645, name: "墾丁南灣" },
             { level: 1, videoId: "Jx01B71j0wc", lat: 24.1370, lng: 121.2757, name: "合歡山武嶺亭" },
 
-//          { level: 2, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第二級 次低優先權" },  
+            // level 2
             { level: 2, videoId: "JkoXcXI04Qk", lat: 23.4598, lng: 121.5068, name: "東海岸大石鼻山" },
             { level: 2, videoId: "GUCaVR88ZFU", lat: 24.8115, lng: 121.2443, name: "石門水庫" },
-            { level: 2, videoId: "AKl3F6cAY2Q", lat: 22.7934, lng: 121.1946, name: "加路蘭遊憩區" },            
-            { level: 2, videoId: "tD_a03trUvE", lat: 24.9872, lng: 121.0156, name: "永安漁港" },            
+            { level: 2, videoId: "AKl3F6cAY2Q", lat: 22.7934, lng: 121.1946, name: "加路蘭遊憩區" },
+            { level: 2, videoId: "tD_a03trUvE", lat: 24.9872, lng: 121.0156, name: "永安漁港" },
             { level: 2, videoId: "fjhg3gAnMFg", lat: 24.3126, lng: 120.5496, name: "高美濕地" },
             { level: 2, videoId: "iJphhU-iaTA", lat: 25.2392, lng: 121.6293, name: "金山中角灣" },
             { level: 2, videoId: "ka7FV0sCvxQ", lat: 22.6105, lng: 120.2671, name: "高雄旗津海水浴場" },
@@ -406,7 +338,7 @@
             { level: 2, videoId: "di-4DCblWq4", lat: 25.1585, lng: 121.4332, name: "八里左岸" },
             { level: 2, videoId: "Ndo_8RuefH4", lat: 25.0569, lng: 121.5033, name: "大稻埕碼頭" },
 
-//          { level: 3, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第三級 低優先權" },    
+            // level 3
             { level: 3, videoId: "XUWjAsajKXg", lat: 24.8851, lng: 121.2874, name: "大溪老街" },
             { level: 3, videoId: "dY2cRNr5Buw", lat: 23.5604, lng: 120.5981, name: "阿里山 太平雲梯" },
             { level: 3, videoId: "tu_gsIkNt-w", lat: 25.0112, lng: 121.3288, name: "桃園虎頭山環保公園" },
@@ -422,47 +354,31 @@
             { level: 3, videoId: "P0CYZnOGxHU", lat: 22.9997, lng: 120.2270, name: "台南市重要路口" },
             { level: 3, videoId: "qPXYKz_i9dY", lat: 25.0169, lng: 121.4627, name: "新北市重要路口" },
 
-//          { level: 4, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第四級 最低優先權" },  
+            // level 4 — 最低優先
             { level: 4, videoId: "yeoV-wBdoxQ", lat: 22.9150, lng: 120.1750, name: "黃金海岸，台南市南區" },
             { level: 4, videoId: "RttyIGHbN_w", lat: 25.1610, lng: 121.5390, name: "陽明書屋" },
             { level: 4, videoId: "-srNHTE-Nf0", lat: 24.4440, lng: 118.3580, name: "金門134高地" },
             { level: 4, videoId: "34h_Cy_n0Ok", lat: 25.0840, lng: 121.5290, name: "劍潭山微風平台" },
             { level: 4, videoId: "5YDXZ1aiR5Y", lat: 24.8210, lng: 121.3530, name: "桃園三龜戲水觀景平台" },
             { level: 4, videoId: "P_U_7xq8Vcg", lat: 23.8569, lng: 120.9324, name: "九蛙疊像" }
-        ];
+        ].filter(cam => isValidYoutubeId(cam.videoId));
 
-        // 4. 建立圖層群組 (LayerGroup) 來分類管理不同層級的標記
-        const level0Group = L.layerGroup();
-        const level1Group = L.layerGroup();
-        const level2Group = L.layerGroup();
-        const level3Group = L.layerGroup();
-        const level4Group = L.layerGroup();
+        // 5. 圖層群組 (索引 0-4 對應 level，取代原本 5 個獨立變數)
+        const levelGroups = Array.from({ length: 5 }, () => L.layerGroup());
         const hiddenPointGroup = L.layerGroup();
-
 
         const youtubeOrigin = window.location.origin === 'null' ? '' : `&origin=${encodeURIComponent(window.location.origin)}`;
         const isMobile = () => window.innerWidth <= 768;
-        const getMaxVideoTiles = () => isMobile() ? 4 : 8; // 手機版最多顯示 4 個，電腦版 8 個
+        const getMaxVideoTiles = () => isMobile() ? 4 : 8;
 
-        function createYoutubeEmbedUrl(videoId, autoplay = false) {
-            const autoplayParam = autoplay ? '&autoplay=1' : '';
-
-            return `https://www.youtube.com/embed/${videoId}?mute=1${autoplayParam}&playsinline=1${youtubeOrigin}`;
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/[&<>"']/g, char => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            }[char]));
+        function createYoutubeEmbedUrl(videoId, autoplay) {
+            return `https://www.youtube.com/embed/${videoId}?mute=1${autoplay ? '&autoplay=1' : ''}&playsinline=1${youtubeOrigin}`;
         }
 
         function renderConnectorLines() {
             const connectorLayer = document.getElementById('connection-layer');
             const mapRect = map.getContainer().getBoundingClientRect();
+            const mobile = isMobile();
             const lines = [...document.querySelectorAll('.video-tile[data-lat][data-lng]')]
                 .map(tile => {
                     const tileRect = tile.getBoundingClientRect();
@@ -471,52 +387,26 @@
                     const targetPoint = map.latLngToContainerPoint([lat, lng]);
                     const targetX = mapRect.left + targetPoint.x;
                     const targetY = mapRect.top + targetPoint.y;
-                    const tileMidY = tileRect.top + tileRect.height / 2;
                     const tileMidX = tileRect.left + tileRect.width / 2;
-                    
-                    let startX = tileMidX < targetX ? tileRect.right : tileRect.left;
-                    let startY = tileMidY;
-                    if (isMobile()) { // 手機版雷射從影片下方射出
-                        startX = tileMidX;
-                        startY = tileRect.bottom;
-                    }
-
-                    return `
-                        <line class="connection-line" x1="${startX}" y1="${startY}" x2="${targetX}" y2="${targetY}"></line>
-                        <circle class="connection-point" cx="${targetX}" cy="${targetY}" r="4"></circle>
-                    `;
+                    const tileMidY = tileRect.top + tileRect.height / 2;
+                    const startX = mobile ? tileMidX : (tileMidX < targetX ? tileRect.right : tileRect.left);
+                    const startY = mobile ? tileRect.bottom : tileMidY;
+                    return `<line class="connection-line" x1="${startX}" y1="${startY}" x2="${targetX}" y2="${targetY}"></line>
+                        <circle class="connection-point" cx="${targetX}" cy="${targetY}" r="4"></circle>`;
                 });
-
             connectorLayer.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
             connectorLayer.innerHTML = lines.join('');
         }
 
         function calculateWallWidthValue(tileCount) {
             if (!tileCount) return 300;
-
             const titleHeight = 24;
-            const verticalMargin = 0;
-            const tileGap = 0;
-            const centerMapMinWidth = 360;
-            const availableColumnHeight = window.innerHeight - verticalMargin - tileGap * (tileCount - 1);
-            const targetFrameHeight = Math.max(90, (availableColumnHeight / tileCount) - titleHeight);
+            const targetFrameHeight = Math.max(90, window.innerHeight / tileCount - titleHeight);
             const targetWidth = targetFrameHeight * 16 / 9;
-            const maxWidthByViewport = Math.max(220, (window.innerWidth - centerMapMinWidth) / 2 - 20);
-            const maxWidthByCount = tileCount <= 1
-                ? 720
-                : tileCount <= 2
-                    ? 620
-                    : tileCount <= 3
-                        ? 520
-                        : tileCount <= 4
-                            ? 440
-                            : tileCount <= 5
-                                ? 360
-                                : 320;
+            const maxWidthByViewport = Math.max(220, (window.innerWidth - 360) / 2 - 20);
+            const maxWidthByCount = tileCount <= 1 ? 720 : tileCount <= 2 ? 620 : tileCount <= 3 ? 520 : tileCount <= 4 ? 440 : tileCount <= 5 ? 360 : 320;
             const minWidthByCount = tileCount >= 6 ? 180 : 240;
-            const wallWidth = Math.min(maxWidthByViewport, maxWidthByCount, Math.max(minWidthByCount, targetWidth));
-
-            return Math.round(wallWidth);
+            return Math.round(Math.min(maxWidthByViewport, maxWidthByCount, Math.max(minWidthByCount, targetWidth)));
         }
 
         function calculateWallWidth(tileCount) {
@@ -525,37 +415,26 @@
 
         function getLevelVisibleCams() {
             const bounds = map.getBounds();
-
-            return webcams
-                .filter(cam => bounds.contains([cam.lat, cam.lng]));
+            return webcams.filter(cam => bounds.contains([cam.lat, cam.lng]));
         }
 
         function selectWallCams(cams) {
             const maxTiles = getMaxVideoTiles();
             const center = map.getCenter();
-            
-            // 計算每個點到地圖中心的距離，以便當 level 相同時使用距離排序
-            const camsWithDistance = cams.map((cam) => ({ 
-                ...cam, 
-                distance: map.distance(center, [cam.lat, cam.lng]) 
+            const camsWithDistance = cams.map(cam => ({
+                ...cam,
+                distance: map.distance(center, [cam.lat, cam.lng])
             }));
-
-            if (camsWithDistance.length <= maxTiles) {
-                return camsWithDistance;
-            }
-
-            const sortedCams = camsWithDistance
-                .sort((a, b) => a.level - b.level || a.distance - b.distance);
-
-            return sortedCams.slice(0, maxTiles);
+            if (camsWithDistance.length <= maxTiles) return camsWithDistance;
+            return camsWithDistance
+                .sort((a, b) => a.level - b.level || a.distance - b.distance)
+                .slice(0, maxTiles);
         }
 
         function splitWallCams(cams) {
-            if (isMobile()) return { westCams: cams, eastCams: [] }; // 手機版所有影片集中在同一個面板
-
+            if (isMobile()) return { westCams: cams, eastCams: [] };
             const westToEastCams = [...cams].sort((a, b) => a.lng - b.lng || b.lat - a.lat);
             const leftCount = cams.length < 4 ? 0 : Math.ceil(westToEastCams.length / 2);
-
             return {
                 westCams: westToEastCams.slice(0, leftCount).sort((a, b) => b.lat - a.lat || a.lng - b.lng),
                 eastCams: westToEastCams.slice(leftCount).sort((a, b) => b.lat - a.lat || a.lng - b.lng)
@@ -564,32 +443,11 @@
 
         function getVideoWallRects(westCount, eastCount) {
             if (isMobile()) {
-                if (westCount === 0) return [];
-                return [{ left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight / 2 }];
+                return westCount ? [{ left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight / 2 }] : [];
             }
-
-            const top = 0;
-            const bottom = window.innerHeight;
             const rects = [];
-
-            if (westCount) {
-                rects.push({
-                    left: 0,
-                    right: calculateWallWidthValue(westCount),
-                    top,
-                    bottom
-                });
-            }
-
-            if (eastCount) {
-                rects.push({
-                    left: window.innerWidth - calculateWallWidthValue(eastCount),
-                    right: window.innerWidth,
-                    top,
-                    bottom
-                });
-            }
-
+            if (westCount) rects.push({ left: 0, right: calculateWallWidthValue(westCount), top: 0, bottom: window.innerHeight });
+            if (eastCount) rects.push({ left: window.innerWidth - calculateWallWidthValue(eastCount), right: window.innerWidth, top: 0, bottom: window.innerHeight });
             return rects;
         }
 
@@ -598,66 +456,93 @@
             const point = map.latLngToContainerPoint([cam.lat, cam.lng]);
             const x = mapRect.left + point.x;
             const y = mapRect.top + point.y;
-
-            return rects.some(rect =>
-                x >= rect.left &&
-                x <= rect.right &&
-                y >= rect.top &&
-                y <= rect.bottom
-            );
+            return rects.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
         }
 
         function getDisplayCams() {
             let candidates = getLevelVisibleCams();
-
             for (let i = 0; i < 3; i++) {
                 const selectedCams = selectWallCams(candidates);
                 const { westCams, eastCams } = splitWallCams(selectedCams);
                 const wallRects = getVideoWallRects(westCams.length, eastCams.length);
                 const uncoveredCams = candidates.filter(cam => !isCamCoveredByVideoWall(cam, wallRects));
-
                 if (uncoveredCams.length === candidates.length) break;
                 candidates = uncoveredCams;
             }
-
             return selectWallCams(candidates);
         }
 
         function createHiddenPoint(cam) {
             return L.circleMarker([cam.lat, cam.lng], {
-                radius: 4,
-                color: '#260000',
-                weight: 1,
-                fillColor: '#ff2d2d',
-                fillOpacity: 0.95
-            }).bindTooltip(cam.name, {
-                direction: 'top', // 顯示在點的上方
-                offset: [0, -5],  // 往上微調一點點避免擋住紅點
-                opacity: 0.9      // 稍微有點透明度的質感
-            }).on('click', () => {
-                map.setView([cam.lat, cam.lng], map.getZoom() + 2);
+                radius: 4, color: '#260000', weight: 1, fillColor: '#ff2d2d', fillOpacity: 0.95
+            }).bindTooltip(cam.name, { direction: 'top', offset: [0, -5], opacity: 0.9 })
+              .on('click', () => { map.setView([cam.lat, cam.lng], map.getZoom() + 2); });
+        }
+
+        // 6. 建立標記 — Popup 按需載入 iframe，關閉時釋放影片資源
+        webcams.forEach(cam => {
+            cam.marker = L.marker([cam.lat, cam.lng])
+                .bindPopup(`<div class="cam-title">🔴 ${escapeHtml(cam.name)}</div><div class="video-container"></div>`)
+                .on('click', () => { map.setView([cam.lat, cam.lng], map.getZoom() + 2); })
+                .on('popupopen', (e) => {
+                    const container = e.popup.getElement()?.querySelector('.video-container');
+                    if (container && !container.querySelector('iframe')) {
+                        container.innerHTML = `<iframe
+                            src="${createYoutubeEmbedUrl(cam.videoId, true)}"
+                            title="${escapeHtml(cam.name)}"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            loading="lazy"
+                            allowfullscreen
+                            style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe>`;
+                    }
+                })
+                .on('popupclose', (e) => {
+                    const container = e.popup.getElement()?.querySelector('.video-container');
+                    if (container) container.innerHTML = '';
+                });
+        });
+
+        // 7. 更新標記顯示狀態
+        function updateMarkersVisibility(displayedCams) {
+            if (!displayedCams) displayedCams = getDisplayCams();
+            const displayedSet = new Set(displayedCams.map(cam => cam.name));
+
+            levelGroups.forEach(g => g.clearLayers());
+            hiddenPointGroup.clearLayers();
+
+            webcams.forEach(cam => {
+                if (!displayedSet.has(cam.name)) {
+                    hiddenPointGroup.addLayer(createHiddenPoint(cam));
+                    return;
+                }
+                if (cam.level >= 0 && cam.level <= 4) levelGroups[cam.level].addLayer(cam.marker);
+            });
+
+            [...levelGroups, hiddenPointGroup].forEach(g => {
+                if (!map.hasLayer(g)) map.addLayer(g);
             });
         }
 
-        let currentRenderedCamIds = ''; // 紀錄目前影片牆上已經渲染的影片 ID
+        // 8. 渲染影片牆
+        // 快取鍵包含裝置模式 (m/d)，確保 mobile ↔ desktop 切換時強制重繪
+        let currentRenderedKey = '';
 
         function renderVideoWall() {
-            const selectedCams = getDisplayCams();
-            const newRenderedCamIds = selectedCams.map(cam => cam.videoId).join(',');
             const mobile = isMobile();
+            const selectedCams = getDisplayCams();
+            const newKey = `${mobile ? 'm' : 'd'}:${selectedCams.map(c => c.videoId).join(',')}`;
             const { westCams, eastCams } = splitWallCams(selectedCams);
 
             const leftWall = document.getElementById('left-video-wall');
             const rightWall = document.getElementById('right-video-wall');
-            
-            // 確保每次呼叫時 (包含視窗縮放) 皆會更新影片牆的寬度，並動態調整右下角工具位置以避免被影片牆遮擋
+            const mapEl = document.getElementById('map');
+
             const leftWidthStr = westCams.length && !mobile ? calculateWallWidth(westCams.length) : '0px';
             const rightWidthStr = eastCams.length && !mobile ? calculateWallWidth(eastCams.length) : '0px';
+
             leftWall.style.width = mobile ? '100vw' : leftWidthStr;
             rightWall.style.width = rightWidthStr;
-
-            // 針對手機板將所有影片牆重置為上方半視窗的網格佈局
-            const mapEl = document.getElementById('map');
 
             if (mobile) {
                 leftWall.style.height = 'auto';
@@ -670,7 +555,7 @@
                 leftWall.style.gridTemplateColumns = '1fr 1fr';
                 leftWall.style.gridTemplateRows = 'auto';
                 leftWall.style.gridAutoRows = 'minmax(0, auto)';
-                leftWall.style.alignContent = 'start'; // 讓影片群組緊貼上方，消除平均分配空間產生的縫隙
+                leftWall.style.alignContent = 'start';
             } else {
                 leftWall.style.height = '100vh';
                 leftWall.style.position = '';
@@ -682,24 +567,22 @@
                 leftWall.style.gridTemplateColumns = '1fr';
                 leftWall.style.gridAutoRows = '';
                 leftWall.style.alignContent = 'center';
-
-                if (mapEl) {
-                    mapEl.style.position = '';
-                    mapEl.style.top = '';
-                    mapEl.style.left = '';
-                    mapEl.style.right = '';
-                    mapEl.style.bottom = '';
-                    mapEl.style.height = '100vh';
-                }
+                mapEl.style.position = '';
+                mapEl.style.top = '';
+                mapEl.style.left = '';
+                mapEl.style.right = '';
+                mapEl.style.bottom = '';
+                mapEl.style.height = '';
             }
 
             const footerLinks = document.getElementById('footer-links');
-            if (footerLinks) footerLinks.style.right = mobile ? '15px' : `calc(${rightWidthStr} + 15px)`;
             const calibTool = document.getElementById('calibration-tool');
-            if (calibTool) calibTool.style.right = mobile ? '20px' : `calc(${rightWidthStr} + 20px)`;
             const leafletControl = document.querySelector('.leaflet-bottom.leaflet-right');
-            if (leafletControl) leafletControl.style.right = rightWidthStr;
             const leafletLeftControl = document.querySelector('.leaflet-left');
+
+            if (footerLinks) footerLinks.style.right = mobile ? '15px' : `calc(${rightWidthStr} + 15px)`;
+            if (calibTool) calibTool.style.right = mobile ? '20px' : `calc(${rightWidthStr} + 20px)`;
+            if (leafletControl) leafletControl.style.right = rightWidthStr;
             if (leafletLeftControl) leafletLeftControl.style.left = leftWidthStr;
 
             const updateMobileMapPosition = () => {
@@ -713,23 +596,20 @@
                 mapEl.style.height = `${window.innerHeight - wallHeight}px`;
             };
 
-            // 若畫面上要顯示的攝影機名單沒有改變，就不重新渲染 DOM，避免影片頻繁中斷與重新載入
-            if (currentRenderedCamIds === newRenderedCamIds) {
+            if (currentRenderedKey === newKey) {
                 updateMarkersVisibility(selectedCams);
                 updateMobileMapPosition();
                 requestAnimationFrame(renderConnectorLines);
                 return;
             }
-            currentRenderedCamIds = newRenderedCamIds;
+            currentRenderedKey = newKey;
 
             [
                 { wall: leftWall, tiles: westCams },
                 { wall: rightWall, tiles: eastCams }
             ].forEach(({ wall, tiles }) => {
                 wall.style.display = tiles.length ? 'grid' : 'none';
-                if (!mobile) {
-                    wall.style.gridTemplateRows = `repeat(${Math.max(tiles.length, 1)}, auto)`;
-                }
+                if (!mobile) wall.style.gridTemplateRows = `repeat(${Math.max(tiles.length, 1)}, auto)`;
                 wall.innerHTML = tiles.map(cam => `
                     <div class="video-tile" data-lat="${cam.lat}" data-lng="${cam.lng}">
                         <div class="video-tile-title">🔴 ${escapeHtml(cam.name)}</div>
@@ -746,104 +626,38 @@
                     </div>
                 `).join('');
             });
+
             updateMobileMapPosition();
             updateMarkersVisibility(selectedCams);
             requestAnimationFrame(renderConnectorLines);
         }
 
-        // 5. 巡迴資料並建立標記點與彈出視窗
-        webcams.forEach(cam => 
-        {
-            const youtubeEmbedUrl = createYoutubeEmbedUrl(cam.videoId, true);
-            const popupContent = `
-                <div class="cam-title">🔴 ${cam.name}</div>
-                <div class="video-container">
-                    <iframe 
-                        src="${youtubeEmbedUrl}"
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerpolicy="strict-origin-when-cross-origin"
-                        loading="lazy"
-                        allowfullscreen
-                        style="width:100%; height:100%; border:none;">
-                    </iframe>
-                </div>
-            `;
+        // 9. 事件綁定 — debounce / rAF 避免過度觸發
+        let rafId;
+        const debouncedConnectorLines = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(renderConnectorLines);
+        };
 
-            cam.marker = L.marker([cam.lat, cam.lng])
-                .bindPopup(popupContent)
-                .on('click', () => {
-                    map.setView([cam.lat, cam.lng], map.getZoom() + 2);
-                });
-        }
-    );
-
-        // 6. 更新標記顯示狀態 (根據當前畫面影片數量)
-        
-        function updateMarkersVisibility(displayedCams = getDisplayCams()) {
-            const displayedCamNames = new Set(displayedCams.map(cam => cam.name));
-
-            level0Group.clearLayers();
-            level1Group.clearLayers();
-            level2Group.clearLayers();
-            level3Group.clearLayers();
-            level4Group.clearLayers();
-            hiddenPointGroup.clearLayers();
-
-            webcams.forEach(cam => {
-                if (!displayedCamNames.has(cam.name)) {
-                    hiddenPointGroup.addLayer(createHiddenPoint(cam));
-                    return;
-                }
-
-                if (cam.level === 0) {
-                    level0Group.addLayer(cam.marker);
-                } else if (cam.level === 1) {
-                    level1Group.addLayer(cam.marker);
-                } else if (cam.level === 2) {
-                    level2Group.addLayer(cam.marker);
-                } else if (cam.level === 3) {
-                    level3Group.addLayer(cam.marker);
-                } else if (cam.level === 4) {
-                    level4Group.addLayer(cam.marker);
-                }
-            });
-            
-            // 所有有顯示影片的圖層及隱藏標記圖層預設都加上地圖
-            if (!map.hasLayer(level0Group)) map.addLayer(level0Group);
-            if (!map.hasLayer(level1Group)) map.addLayer(level1Group);
-            if (!map.hasLayer(level2Group)) map.addLayer(level2Group);
-            if (!map.hasLayer(level3Group)) map.addLayer(level3Group);
-            if (!map.hasLayer(level4Group)) map.addLayer(level4Group);
-            if (!map.hasLayer(hiddenPointGroup)) map.addLayer(hiddenPointGroup);
-        }
-
-        // 7. 綁定縮放事件並執行第一次初始化
-        map.on('zoomend', () => {
-            updateMarkersVisibility();
-            renderVideoWall();
-        });
+        map.on('zoomend', renderVideoWall);
         map.on('moveend', renderVideoWall);
-        map.on('zoom move', renderConnectorLines);
-        window.addEventListener('resize', () => {
-            map.invalidateSize(); // 強制讓 Leaflet 重新計算地圖容器大小 (例如旋轉手機時)
+        map.on('zoom move', debouncedConnectorLines);
+        window.addEventListener('resize', debounce(() => {
+            map.invalidateSize();
             renderVideoWall();
             renderConnectorLines();
-        });
-        updateMarkersVisibility(); // 網頁載入時馬上檢查一次
+        }, 150));
+
         renderVideoWall();
 
-        // ==========================================
-        // 雷達回波按鈕事件綁定
-        // ==========================================
-        const radarBtn = document.getElementById('radar-btn');
-        const calibrationTool = document.getElementById('calibration-tool');
+        // 10. 雷達回波開關
         let isRadarVisible = true;
+        const radarBtn = document.getElementById('radar-btn');
         radarBtn.classList.add('active');
         radarBtn.addEventListener('click', () => {
             isRadarVisible = !isRadarVisible;
             if (isRadarVisible) {
-                radarOverlay.setUrl(`${radarImageUrl}?t=${new Date().getTime()}`); // 加上時間戳記確保取得最新圖檔
+                radarOverlay.setUrl(`${radarImageUrl}?t=${Date.now()}`);
                 radarOverlay.addTo(map);
                 radarBtn.classList.add('active');
             } else {
@@ -852,33 +666,37 @@
             }
         });
 
-        // ==========================================
-        // 臨時疊圖校正工具邏輯 (拖曳滑軌即時更新疊圖)
-        // ==========================================
-        ['n', 's', 'w', 'e'].forEach(dir => {
-            document.getElementById(`slider-${dir}`).addEventListener('input', () => {
-                const n = parseFloat(document.getElementById('slider-n').value).toFixed(3);
-                const s = parseFloat(document.getElementById('slider-s').value).toFixed(3);
-                const w = parseFloat(document.getElementById('slider-w').value).toFixed(3);
-                const e = parseFloat(document.getElementById('slider-e').value).toFixed(3);
-                document.getElementById(`val-${dir}`).innerText = eval(dir); // 更新畫面數字
+        // 雷達圖每 10 分鐘自動刷新
+        setInterval(() => {
+            if (isRadarVisible) radarOverlay.setUrl(`${radarImageUrl}?t=${Date.now()}`);
+        }, 10 * 60 * 1000);
 
-                radarOverlay.setBounds([[parseFloat(s), parseFloat(w)], [parseFloat(n), parseFloat(e)]]); // 即時更新雷達圖邊界
-                document.getElementById('copy-code').value = `[[${s}, ${w}], [${n}, ${e}]]`; // 產生最終 Code
-            });
-        });
-
-        // ==========================================
-        // 獨立開關校正工具面板
-        // ==========================================
+        // 11. 校正工具 — 僅 ?debug=1 時顯示，修復 eval() 安全漏洞
+        const isDebugMode = new URLSearchParams(window.location.search).has('debug');
+        const calibrationTool = document.getElementById('calibration-tool');
         const calibBtn = document.getElementById('calib-btn');
-        calibBtn.addEventListener('click', () => {
-            if (calibrationTool.style.display === 'none') {
-                calibrationTool.style.display = 'block';
-            } else {
-                calibrationTool.style.display = 'none';
-            }
-        });
+
+        if (calibBtn) calibBtn.style.display = isDebugMode ? '' : 'none';
+
+        if (isDebugMode && calibBtn) {
+            calibBtn.addEventListener('click', () => {
+                calibrationTool.style.display = calibrationTool.style.display === 'none' ? 'block' : 'none';
+            });
+
+            ['n', 's', 'w', 'e'].forEach(dir => {
+                document.getElementById(`slider-${dir}`).addEventListener('input', () => {
+                    const vals = {
+                        n: parseFloat(document.getElementById('slider-n').value).toFixed(3),
+                        s: parseFloat(document.getElementById('slider-s').value).toFixed(3),
+                        w: parseFloat(document.getElementById('slider-w').value).toFixed(3),
+                        e: parseFloat(document.getElementById('slider-e').value).toFixed(3)
+                    };
+                    document.getElementById(`val-${dir}`).innerText = vals[dir];
+                    radarOverlay.setBounds([[parseFloat(vals.s), parseFloat(vals.w)], [parseFloat(vals.n), parseFloat(vals.e)]]);
+                    document.getElementById('copy-code').value = `[[${vals.s}, ${vals.w}], [${vals.n}, ${vals.e}]]`;
+                });
+            });
+        }
     </script>
 </body>
 </html>
