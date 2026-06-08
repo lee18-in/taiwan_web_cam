@@ -358,22 +358,28 @@
         // 3. 建立攝影機資料庫，包含座標、YouTube ID 與 顯示層級 (Level)
         //    影片視窗框架不足時 優先顯示高等級的影片視窗，不要用縮放等級判斷
         //    邏輯是 就算是最大的地圖 畫面上就算只有一個四級也是要顯示那個四級影片
-        //    畫面的地標數量超過影片視窗框架能容納的數量時，才會依照等級優先顯示較高等級的地標，較低等級的地標會暫時被隱藏，直到畫面縮小到只能容納較低等級的地標時才會顯示出來
+        //    畫面的地標數量超過影片視窗框架能容納的數量時，才會依照等級優先顯示較高等級的地標，
+        //    較低等級的地標會暫時被隱藏，直到畫面縮小到影片框架數量足夠 容納較低等級的地標時才會顯示出來
+        //    若優先權相同，則依照距離中心點較近的地標顯示優先
+        
         const webcams = [
             // === 第零級 影片視窗框架不足時 優先顯示高等級的影片視窗 ===
+//          { level: 0, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第零級" },       
             { level: 0, videoId: "z_fY1pj1VBw", lat: 25.0273, lng: 121.5706, name: "象山看台北" },
             { level: 0, videoId: "lhXXhDyjFtI", lat: 24.1434, lng: 120.5744, name: "台中望高寮" },
             { level: 0, videoId: "C03Itx8iSC0", lat: 22.6274, lng: 120.2634, name: "高雄壽山情人觀景台" },   
             { level: 0, videoId: "dQ7Sd6PGLdA", lat: 23.1263, lng: 121.4153, name: "三仙台" },            
             
-            // === 第一級 (大範圍地圖顯示) ===
+
+//          { level: 1, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第一級 次高優先權" },                 
             { level: 1, videoId: "91PfFoqvuUk", lat: 25.0797, lng: 121.2342, name: "桃園國際機場" },
             { level: 1, videoId: "JkoXcXI04Qk", lat: 23.4598, lng: 121.5068, name: "東海岸大石鼻山" },
             { level: 1, videoId: "j2L_559nCjc", lat: 23.4388, lng: 120.6448, name: "阿里山二延平步道" },
             { level: 1, videoId: "GUCaVR88ZFU", lat: 24.8115, lng: 121.2443, name: "石門水庫" },
             { level: 1, videoId: "jUnFuJSj0OU", lat: 21.9582, lng: 120.7645, name: "墾丁南灣" },
             { level: 1, videoId: "Jx01B71j0wc", lat: 24.1370, lng: 121.2757, name: "合歡山武嶺亭" },
-            // === 第二級 (縮放到較小區域時顯示) ===
+
+//          { level: 2, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第二級 次低優先權" },    
             { level: 2, videoId: "AKl3F6cAY2Q", lat: 22.7934, lng: 121.1946, name: "加路蘭遊憩區" },            
             { level: 2, videoId: "tD_a03trUvE", lat: 24.9872, lng: 121.0156, name: "永安漁港" },            
             { level: 2, videoId: "fjhg3gAnMFg", lat: 24.3126, lng: 120.5496, name: "高美濕地" },
@@ -399,7 +405,8 @@
             { level: 2, videoId: "nV-DKquUjFs", lat: 24.6811, lng: 121.4026, name: "上巴陵" },
             { level: 2, videoId: "di-4DCblWq4", lat: 25.1585, lng: 121.4332, name: "八里左岸" },
             { level: 2, videoId: "Ndo_8RuefH4", lat: 25.0569, lng: 121.5033, name: "大稻埕碼頭" },
-            // === 第三級 ===
+
+//          { level: 3, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第三級 低優先權" },    
             { level: 3, videoId: "XUWjAsajKXg", lat: 24.8851, lng: 121.2874, name: "大溪老街" },
             { level: 3, videoId: "dY2cRNr5Buw", lat: 23.5604, lng: 120.5981, name: "阿里山 太平雲梯" },
             { level: 3, videoId: "tu_gsIkNt-w", lat: 25.0112, lng: 121.3288, name: "桃園虎頭山環保公園" },
@@ -414,7 +421,8 @@
             { level: 3, videoId: "53tHc92PDfE", lat: 24.1477, lng: 120.6736, name: "台中市各要路口" },
             { level: 3, videoId: "P0CYZnOGxHU", lat: 22.9997, lng: 120.2270, name: "台南市重要路口" },
             { level: 3, videoId: "qPXYKz_i9dY", lat: 25.0169, lng: 121.4627, name: "新北市重要路口" },
-            // === 第四級 ===
+
+//          { level: 4, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第四級 最低優先權" },  
             { level: 4, videoId: "yeoV-wBdoxQ", lat: 22.9150, lng: 120.1750, name: "黃金海岸，台南市南區" },
             { level: 4, videoId: "RttyIGHbN_w", lat: 25.1610, lng: 121.5390, name: "陽明書屋" },
             { level: 4, videoId: "-srNHTE-Nf0", lat: 24.4440, lng: 118.3580, name: "金門134高地" },
@@ -524,14 +532,20 @@
 
         function selectWallCams(cams) {
             const maxTiles = getMaxVideoTiles();
-            const camsWithIndex = cams.map((cam, index) => ({ ...cam, index }));
+            const center = map.getCenter();
+            
+            // 計算每個點到地圖中心的距離，以便當 level 相同時使用距離排序
+            const camsWithDistance = cams.map((cam) => ({ 
+                ...cam, 
+                distance: map.distance(center, [cam.lat, cam.lng]) 
+            }));
 
-            if (camsWithIndex.length <= maxTiles) {
-                return camsWithIndex;
+            if (camsWithDistance.length <= maxTiles) {
+                return camsWithDistance;
             }
 
-            const sortedCams = camsWithIndex
-                .sort((a, b) => a.level - b.level || a.index - b.index);
+            const sortedCams = camsWithDistance
+                .sort((a, b) => a.level - b.level || a.distance - b.distance);
 
             return sortedCams.slice(0, maxTiles);
         }
