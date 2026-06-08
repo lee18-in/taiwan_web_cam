@@ -326,8 +326,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // 1. 初始化地圖，設定中心點為台灣地理中心碑 (緯度: 23.5832, 經度: 120.5825)，縮放級別為 7
-        const map = L.map('map').setView([23.5832, 120.5825], 7);
+        // 1. 初始化地圖，設定中心點為台灣地理中心碑 (緯度: 23.5825, 經度: 120.5855)，縮放級別為 8
+        const map = L.map('map').setView([23.5825, 120.5855], 8);
 
         // 2. 加入開源的地圖圖層 (OpenStreetMap)
         // 這裡為了有點戰情室的感覺，我們使用 CartoDB 的暗色主題地圖 (Dark Matter)
@@ -442,7 +442,7 @@
 
         const youtubeOrigin = window.location.origin === 'null' ? '' : `&origin=${encodeURIComponent(window.location.origin)}`;
         const isMobile = () => window.innerWidth <= 768;
-        const getMaxVideoTiles = () => isMobile() ? 4 : 10; // 手機版最多顯示 4 個
+        const getMaxVideoTiles = () => isMobile() ? 4 : 8; // 手機版最多顯示 4 個，電腦版 8 個
 
         function createYoutubeEmbedUrl(videoId, autoplay = false) {
             const autoplayParam = autoplay ? '&autoplay=1' : '';
