@@ -356,16 +356,21 @@
         }).addTo(map);
 
         // 3. 建立攝影機資料庫，包含座標、YouTube ID 與 顯示層級 (Level)
+        //    影片視窗框架不足時 優先顯示高等級的影片視窗，不要用縮放等級判斷
+        //    邏輯是 就算是最大的地圖 畫面上就算只有一個四級也是要顯示那個四級影片
+        //    畫面的地標數量超過影片視窗框架能容納的數量時，才會依照等級優先顯示較高等級的地標，較低等級的地標會暫時被隱藏，直到畫面縮小到只能容納較低等級的地標時才會顯示出來
         const webcams = [
+            // === 第零級 影片視窗框架不足時 優先顯示高等級的影片視窗 ===
+            { level: 0, videoId: "z_fY1pj1VBw", lat: 25.0273, lng: 121.5706, name: "象山看台北" },
+            { level: 0, videoId: "lhXXhDyjFtI", lat: 24.1434, lng: 120.5744, name: "台中望高寮" },
+            { level: 0, videoId: "C03Itx8iSC0", lat: 22.6274, lng: 120.2634, name: "高雄壽山情人觀景台" },   
+            { level: 0, videoId: "dQ7Sd6PGLdA", lat: 23.1263, lng: 121.4153, name: "三仙台" },            
+            
             // === 第一級 (大範圍地圖顯示) ===
             { level: 1, videoId: "91PfFoqvuUk", lat: 25.0797, lng: 121.2342, name: "桃園國際機場" },
-            { level: 1, videoId: "z_fY1pj1VBw", lat: 25.0273, lng: 121.5706, name: "象山看台北" },
-            { level: 1, videoId: "lhXXhDyjFtI", lat: 24.1434, lng: 120.5744, name: "台中望高寮" },
             { level: 1, videoId: "JkoXcXI04Qk", lat: 23.4598, lng: 121.5068, name: "東海岸大石鼻山" },
             { level: 1, videoId: "j2L_559nCjc", lat: 23.4388, lng: 120.6448, name: "阿里山二延平步道" },
-            { level: 1, videoId: "C03Itx8iSC0", lat: 22.6274, lng: 120.2634, name: "高雄壽山情人觀景台" },
             { level: 1, videoId: "GUCaVR88ZFU", lat: 24.8115, lng: 121.2443, name: "石門水庫" },
-            { level: 1, videoId: "dQ7Sd6PGLdA", lat: 23.1263, lng: 121.4153, name: "三仙台" },
             { level: 1, videoId: "jUnFuJSj0OU", lat: 21.9582, lng: 120.7645, name: "墾丁南灣" },
             { level: 1, videoId: "Jx01B71j0wc", lat: 24.1370, lng: 121.2757, name: "合歡山武嶺亭" },
             // === 第二級 (縮放到較小區域時顯示) ===
@@ -419,6 +424,7 @@
         ];
 
         // 4. 建立圖層群組 (LayerGroup) 來分類管理不同層級的標記
+        const level0Group = L.layerGroup();
         const level1Group = L.layerGroup();
         const level2Group = L.layerGroup();
         const level3Group = L.layerGroup();
@@ -763,6 +769,7 @@
         function updateMarkersVisibility(displayedCams = getDisplayCams()) {
             const displayedCamNames = new Set(displayedCams.map(cam => cam.name));
 
+            level0Group.clearLayers();
             level1Group.clearLayers();
             level2Group.clearLayers();
             level3Group.clearLayers();
@@ -775,7 +782,9 @@
                     return;
                 }
 
-                if (cam.level === 1) {
+                if (cam.level === 0) {
+                    level0Group.addLayer(cam.marker);
+                } else if (cam.level === 1) {
                     level1Group.addLayer(cam.marker);
                 } else if (cam.level === 2) {
                     level2Group.addLayer(cam.marker);
@@ -787,6 +796,7 @@
             });
             
             // 所有有顯示影片的圖層及隱藏標記圖層預設都加上地圖
+            if (!map.hasLayer(level0Group)) map.addLayer(level0Group);
             if (!map.hasLayer(level1Group)) map.addLayer(level1Group);
             if (!map.hasLayer(level2Group)) map.addLayer(level2Group);
             if (!map.hasLayer(level3Group)) map.addLayer(level3Group);
