@@ -54,7 +54,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>即時影像雷達 by  lee18.in Andy Lee </title>
+    <title>即時影像雷達雨量 by  lee18.in Andy Lee </title>
     
     <!-- 引入 Leaflet 的 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -293,33 +293,34 @@
 
     <!-- 臨時疊圖校正工具 (開發輔助用) -->
     <div id="calibration-tool" style="position: fixed; bottom: 115px; right: 20px; background: rgba(0,0,0,0.85); color: white; padding: 15px; z-index: 2000; border-radius: 8px; border: 1px solid #ffcc00; display: none; backdrop-filter: blur(4px); box-shadow: 0 10px 20px rgba(0,0,0,0.8); transition: right 0.2s ease-out;">
-        <h4 style="margin: 0 0 10px 0; color: #ffcc00; text-align: center;">🛠️ 雷達圖校正工具</h4>
+        <h4 id="calibration-title" style="margin: 0 0 10px 0; color: #ffcc00; text-align: center;">🛠️ 雨量圖校正工具</h4>
         <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; font-size: 14px;">
             <label>北(上)</label>
-            <input type="range" id="slider-n" min="24.000" max="28.000" step="0.005" value="26.480">
-            <span id="val-n" style="color:#00ffcc; width: 45px;">26.480</span>
+            <input type="range" id="slider-n" min="24.900" max="26.900" step="0.005" value="25.900">
+            <span id="val-n" style="color:#00ffcc; width: 45px;">25.900</span>
             
             <label>南(下)</label>
-            <input type="range" id="slider-s" min="18.000" max="22.000" step="0.005" value="20.455">
-            <span id="val-s" style="color:#00ffcc; width: 45px;">20.455</span>
+            <input type="range" id="slider-s" min="20.505" max="22.505" step="0.005" value="21.505">
+            <span id="val-s" style="color:#00ffcc; width: 45px;">21.505</span>
             
             <label>西(左)</label>
-            <input type="range" id="slider-w" min="115.000" max="120.000" step="0.005" value="118.000">
-            <span id="val-w" style="color:#00ffcc; width: 45px;">118.000</span>
+            <input type="range" id="slider-w" min="118.195" max="120.195" step="0.005" value="119.195">
+            <span id="val-w" style="color:#00ffcc; width: 45px;">119.195</span>
             
             <label>東(右)</label>
-            <input type="range" id="slider-e" min="121.000" max="127.000" step="0.005" value="124.000">
-            <span id="val-e" style="color:#00ffcc; width: 45px;">124.000</span>
+            <input type="range" id="slider-e" min="122.575" max="124.575" step="0.005" value="123.575">
+            <span id="val-e" style="color:#00ffcc; width: 45px;">123.575</span>
         </div>
         <div style="margin-top: 15px; font-size: 12px; color: #aaa;">
-            請複製此陣列貼回 code 中取代原有的 radarBounds：<br>
-            <input type="text" id="copy-code" value="[[20.455, 118.000], [26.480, 124.000]]" style="width: 100%; background: #222; color: #ffcc00; border: 1px solid #555; padding: 5px; margin-top: 5px; font-family: monospace; text-align: center;" readonly>
+            <span id="copy-code-label">請複製此陣列貼回 code 中取代原有的 rainfallBounds：</span><br>
+            <input type="text" id="copy-code" value="[[21.505, 119.195], [25.900, 123.575]]" style="width: 100%; background: #222; color: #ffcc00; border: 1px solid #555; padding: 5px; margin-top: 5px; font-family: monospace; text-align: center;" readonly>
         </div>
     </div>
 
     <!-- 頁腳資訊與控制選項 -->
     <div id="footer-links" class="footer-links">
-        <a id="radar-btn" title="開關雷達回波">🌦️切換</a>
+        <a id="radar-btn" title="開關雷達回波">🌦️</a>
+        <a id="rainfall-btn" title="開關累積雨量圖">🌧️</a>
     </div>
 
     <!-- 引入 Leaflet 的 JavaScript -->
@@ -332,15 +333,16 @@
         // 2. 加入開源的地圖圖層 (OpenStreetMap)
         // 這裡為了有點戰情室的感覺，我們使用 CartoDB 的暗色主題地圖 (Dark Matter)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="color: #; margin: 0 3px;">影像版權屬建置單位所有</span>  <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank"> 讀我</a>  <a id="calib-btn" title="雷達校正工具">⚙️</a>  ',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="color: #; margin: 0 3px;">影像版權屬建置單位所有</span>  <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank"> 讀我</a>  <a id="calib-btn" title="疊圖校正工具">⚙️</a>  ',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
 
         // ==========================================
-        // 準備氣象署雷達回波圖層 (預設隱藏)
+        // 準備氣象署雷達回波與累積雨量圖層
         // ==========================================
         const radarImageUrl = 'https://www.cwa.gov.tw/Data/radar/CV1_TW_3600.png';
+        const rainfallImageUrl = 'https://www.cwa.gov.tw/Data/rainfall/QZJ.jpg';
         
         // 🌧️ 手動疊圖校正區
         // 格式：[[左下角緯度(南), 左下角經度(西)], [右上角緯度(北), 右上角經度(東)]]
@@ -350,8 +352,13 @@
         // - 變胖/變寬：把西 (117.500) 調小，或東 (125.000) 調大。 (變瘦則反之)
         // - 變高/拉長：把北 (26.500) 調大，或南 (19.000) 調小。 (變矮則反之)
         const radarBounds = [[20.455, 118.000], [26.480, 124.000]];  // [ [南緯(下), 西經(左)], [北緯(上), 東經(右)] ]
+        const rainfallBounds = [[21.505, 119.195], [25.900, 123.575]];  // [ [南緯(下), 西經(左)], [北緯(上), 東經(右)] ]
         const radarOverlay = L.imageOverlay(`${radarImageUrl}?t=${new Date().getTime()}`, radarBounds, {
             opacity: 0.2, // 設定微透明才不會完全擋住底圖
+            interactive: false // 允許滑鼠穿透點擊底下的地標
+        }).addTo(map);
+        const rainfallOverlay = L.imageOverlay(`${rainfallImageUrl}?t=${new Date().getTime()}`, rainfallBounds, {
+            opacity: 0.1, // 設定微透明才不會完全擋住底圖
             interactive: false // 允許滑鼠穿透點擊底下的地標
         }).addTo(map);
 
@@ -834,22 +841,104 @@
         renderVideoWall();
 
         // ==========================================
-        // 雷達回波按鈕事件綁定
+        // 氣象疊圖按鈕與校正工具事件綁定
         // ==========================================
         const radarBtn = document.getElementById('radar-btn');
+        const rainfallBtn = document.getElementById('rainfall-btn');
         const calibrationTool = document.getElementById('calibration-tool');
+        const calibrationTitle = document.getElementById('calibration-title');
+        const copyCodeLabel = document.getElementById('copy-code-label');
+        const sliderRanges = {
+            radar: {
+                n: { min: '24.000', max: '28.000' },
+                s: { min: '18.000', max: '22.000' },
+                w: { min: '115.000', max: '120.000' },
+                e: { min: '121.000', max: '127.000' }
+            },
+            rainfall: {
+                n: { min: '24.000', max: '27.000' },
+                s: { min: '20.000', max: '22.500' },
+                w: { min: '118.500', max: '121.000' },
+                e: { min: '122.000', max: '124.500' }
+            }
+        };
+        const weatherOverlays = {
+            radar: {
+                title: '🛠️ 雷達圖校正工具',
+                boundsName: 'radarBounds',
+                imageUrl: radarImageUrl,
+                overlay: radarOverlay,
+                btn: radarBtn,
+                bounds: radarBounds.map(point => [...point])
+            },
+            rainfall: {
+                title: '🛠️ 雨量圖校正工具',
+                boundsName: 'rainfallBounds',
+                imageUrl: rainfallImageUrl,
+                overlay: rainfallOverlay,
+                btn: rainfallBtn,
+                bounds: rainfallBounds.map(point => [...point])
+            }
+        };
+        let activeCalibrationOverlay = 'rainfall';
         let isRadarVisible = true;
+        let isRainfallVisible = true;
+
+        function getBoundsValues(bounds) {
+            return {
+                s: bounds[0][0].toFixed(3),
+                w: bounds[0][1].toFixed(3),
+                n: bounds[1][0].toFixed(3),
+                e: bounds[1][1].toFixed(3)
+            };
+        }
+
+        function setCalibrationTarget(type) {
+            const config = weatherOverlays[type];
+            const values = getBoundsValues(config.bounds);
+
+            activeCalibrationOverlay = type;
+            calibrationTitle.innerText = config.title;
+            copyCodeLabel.innerText = `請複製此陣列貼回 code 中取代原有的 ${config.boundsName}：`;
+
+            ['n', 's', 'w', 'e'].forEach(dir => {
+                const slider = document.getElementById(`slider-${dir}`);
+                const range = sliderRanges[type][dir];
+                slider.min = range.min;
+                slider.max = range.max;
+                slider.value = values[dir];
+                document.getElementById(`val-${dir}`).innerText = values[dir];
+            });
+
+            document.getElementById('copy-code').value = `[[${values.s}, ${values.w}], [${values.n}, ${values.e}]]`;
+        }
+
+        function setWeatherOverlayVisible(type, visible) {
+            const config = weatherOverlays[type];
+
+            setCalibrationTarget(type);
+            if (visible) {
+                config.overlay.setUrl(`${config.imageUrl}?t=${new Date().getTime()}`); // 加上時間戳記確保取得最新圖檔
+                config.overlay.addTo(map);
+                config.btn.classList.add('active');
+            } else {
+                map.removeLayer(config.overlay);
+                config.btn.classList.remove('active');
+            }
+        }
+
         radarBtn.classList.add('active');
+        rainfallBtn.classList.add('active');
+        setCalibrationTarget(activeCalibrationOverlay);
+
         radarBtn.addEventListener('click', () => {
             isRadarVisible = !isRadarVisible;
-            if (isRadarVisible) {
-                radarOverlay.setUrl(`${radarImageUrl}?t=${new Date().getTime()}`); // 加上時間戳記確保取得最新圖檔
-                radarOverlay.addTo(map);
-                radarBtn.classList.add('active');
-            } else {
-                map.removeLayer(radarOverlay);
-                radarBtn.classList.remove('active');
-            }
+            setWeatherOverlayVisible('radar', isRadarVisible);
+        });
+
+        rainfallBtn.addEventListener('click', () => {
+            isRainfallVisible = !isRainfallVisible;
+            setWeatherOverlayVisible('rainfall', isRainfallVisible);
         });
 
         // ==========================================
@@ -861,9 +950,13 @@
                 const s = parseFloat(document.getElementById('slider-s').value).toFixed(3);
                 const w = parseFloat(document.getElementById('slider-w').value).toFixed(3);
                 const e = parseFloat(document.getElementById('slider-e').value).toFixed(3);
-                document.getElementById(`val-${dir}`).innerText = eval(dir); // 更新畫面數字
+                const values = { n, s, w, e };
+                const config = weatherOverlays[activeCalibrationOverlay];
+                const nextBounds = [[parseFloat(s), parseFloat(w)], [parseFloat(n), parseFloat(e)]];
 
-                radarOverlay.setBounds([[parseFloat(s), parseFloat(w)], [parseFloat(n), parseFloat(e)]]); // 即時更新雷達圖邊界
+                document.getElementById(`val-${dir}`).innerText = values[dir]; // 更新畫面數字
+                config.bounds = nextBounds;
+                config.overlay.setBounds(nextBounds); // 即時更新目前選取的疊圖邊界
                 document.getElementById('copy-code').value = `[[${s}, ${w}], [${n}, ${e}]]`; // 產生最終 Code
             });
         });
