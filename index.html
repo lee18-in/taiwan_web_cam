@@ -333,11 +333,11 @@ https://www.cwa.gov.tw/Data/satellite/TWI_IR1_Gray_800/TWI_IR1_Gray_800.jpg
 
     <!-- 頁腳資訊與控制選項 -->
     <div id="footer-links" class="footer-links">
-        <a id="radar-btn" title="開關雷達回波">🌦️</a>
+        <a id="radar-btn" title="開關雷達回波">📡</a>
         <a id="sat-btn-visible" title="可見光衛星雲圖">☀️</a>
         <a id="sat-btn-trueColor" title="真實色衛星雲圖">🌍</a>
-        <a id="sat-btn-color" title="彩色紅外線衛星雲圖">🌈</a>
-        <a id="sat-btn-enhanced" title="色調強化衛星雲圖">🔆</a>
+        <a id="sat-btn-color" title="彩色紅外線衛星雲圖">🎨</a>
+        <a id="sat-btn-enhanced" title="色調強化衛星雲圖">🌓</a>
         <a id="sat-btn-bw" title="黑白紅外線衛星雲圖">⬛</a>
         <a id="rainfall-btn" title="開關累積雨量圖">🌧️</a>        
     </div>
@@ -352,7 +352,7 @@ https://www.cwa.gov.tw/Data/satellite/TWI_IR1_Gray_800/TWI_IR1_Gray_800.jpg
         // 2. 加入開源的地圖圖層 (OpenStreetMap)
         // 這裡為了有點戰情室的感覺，我們使用 CartoDB 的暗色主題地圖 (Dark Matter)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> <span style="color: #000000; margin: 0 3px;">影像版權屬建置單位所有</span> <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank">讀我</a> <a id="calib-btn" title="疊圖校正工具">⚙️</a>',
+            attribution: ' <span style="color: #00ffcc; margin: 0 3px;"> &copy; </span>  <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> <span style="color: #00ffcc; margin: 0 3px;">contributors</span> <span style="color: #00ffcc; margin: 0 3px;"> &copy; </span> <a href="https://carto.com/attributions">CARTO</a> <span style="color: #00ffcc; margin: 0 3px;">影像版權屬建置單位所有</span> <a href="https://github.com/lee18-in/taiwan_web_cam#readme" target="_blank">讀我</a> <a id="calib-btn" title="疊圖校正工具">⚙️</a>',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
@@ -368,7 +368,7 @@ https://www.cwa.gov.tw/Data/satellite/TWI_IR1_Gray_800/TWI_IR1_Gray_800.jpg
             'radarBounds': [[20.455, 118.000], [26.480, 124.000]],
             'rainfallBounds': [[21.505, 119.195], [25.900, 123.575]]
         };
-        const IMG_opacity = 0.4; // 預設疊圖透明度
+        const IMG_opacity = 0.3; // 預設疊圖透明度
         const allLayers = {
             radar:     { url: 'https://www.cwa.gov.tw/Data/radar/CV1_TW_3600.png',                             boundsGroup: 'radarBounds',    opacity: IMG_opacity, calType: 'radar'    },
             rainfall:  { url: 'https://www.cwa.gov.tw/Data/rainfall/QZJ.jpg',                                  boundsGroup: 'rainfallBounds', opacity: IMG_opacity, calType: 'rainfall' },
