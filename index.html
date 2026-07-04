@@ -498,24 +498,40 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
 
         function renderConnectorLines() {
             const connectorLayer = document.getElementById('connection-layer');
+            const svgRect = connectorLayer.getBoundingClientRect();
             const mapRect = map.getContainer().getBoundingClientRect();
+
+            // 設定 SVG viewBox，使其大小與其實際渲染寬高一致 (避開行動裝置 100vh 與視窗縮放造成的位移問題)
+            connectorLayer.setAttribute('viewBox', `0 0 ${svgRect.width} ${svgRect.height}`);
+
             const lines = [...document.querySelectorAll('.video-tile[data-lat][data-lng]')]
                 .map(tile => {
                     const tileRect = tile.getBoundingClientRect();
                     const lat = Number(tile.dataset.lat);
                     const lng = Number(tile.dataset.lng);
                     const targetPoint = map.latLngToContainerPoint([lat, lng]);
-                    const targetX = mapRect.left + targetPoint.x;
-                    const targetY = mapRect.top + targetPoint.y;
+                    
+                    // 地標在地圖上的絕對 Client 座標
+                    const clientTargetX = mapRect.left + targetPoint.x;
+                    const clientTargetY = mapRect.top + targetPoint.y;
+                    
+                    // 轉為相對於 SVG 畫布的座標
+                    const targetX = clientTargetX - svgRect.left;
+                    const targetY = clientTargetY - svgRect.top;
+                    
                     const tileMidY = tileRect.top + tileRect.height / 2;
                     const tileMidX = tileRect.left + tileRect.width / 2;
                     
-                    let startX = tileMidX < targetX ? tileRect.right : tileRect.left;
-                    let startY = tileMidY;
+                    let clientStartX = tileMidX < clientTargetX ? tileRect.right : tileRect.left;
+                    let clientStartY = tileMidY;
                     if (isMobile()) { // 手機版雷射從影片下方射出
-                        startX = tileMidX;
-                        startY = tileRect.bottom;
+                        clientStartX = tileMidX;
+                        clientStartY = tileRect.bottom;
                     }
+                    
+                    // 起始點轉為相對於 SVG 畫布的座標
+                    const startX = clientStartX - svgRect.left;
+                    const startY = clientStartY - svgRect.top;
 
                     return `
                         <line class="connection-line" x1="${startX}" y1="${startY}" x2="${targetX}" y2="${targetY}"></line>
@@ -523,7 +539,6 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                     `;
                 });
 
-            connectorLayer.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
             connectorLayer.innerHTML = lines.join('');
         }
 
@@ -718,15 +733,6 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                 leftWall.style.gridTemplateColumns = '1fr';
                 leftWall.style.gridAutoRows = '';
                 leftWall.style.alignContent = 'center';
-
-                if (mapEl) {
-                    mapEl.style.position = '';
-                    mapEl.style.top = '';
-                    mapEl.style.left = '';
-                    mapEl.style.right = '';
-                    mapEl.style.bottom = '';
-                    mapEl.style.height = '100vh';
-                }
             }
 
             const footerLinks = document.getElementById('footer-links');
@@ -738,21 +744,32 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             const leafletLeftControl = document.querySelector('.leaflet-left');
             if (leafletLeftControl) leafletLeftControl.style.left = leftWidthStr;
 
-            const updateMobileMapPosition = () => {
-                if (!mobile) return;
-                const wallHeight = leftWall.getBoundingClientRect().height;
-                mapEl.style.position = 'fixed';
-                mapEl.style.top = `${wallHeight}px`;
-                mapEl.style.left = '0';
-                mapEl.style.right = '0';
-                mapEl.style.bottom = '0';
-                mapEl.style.height = `${window.innerHeight - wallHeight}px`;
+            const updateMapPosition = () => {
+                if (mobile) {
+                    const wallHeight = leftWall.getBoundingClientRect().height;
+                    mapEl.style.position = 'fixed';
+                    mapEl.style.top = `${wallHeight}px`;
+                    mapEl.style.left = '0';
+                    mapEl.style.right = '0';
+                    mapEl.style.bottom = '0';
+                    mapEl.style.height = `${window.innerHeight - wallHeight}px`;
+                } else {
+                    if (mapEl) {
+                        mapEl.style.position = '';
+                        mapEl.style.top = '';
+                        mapEl.style.left = '';
+                        mapEl.style.right = '';
+                        mapEl.style.bottom = '';
+                        mapEl.style.height = '100vh';
+                    }
+                }
+                map.invalidateSize({ animate: false });
             };
 
             // 若畫面上要顯示的攝影機名單沒有改變，就不重新渲染 DOM，避免影片頻繁中斷與重新載入
             if (currentRenderedCamIds === newRenderedCamIds) {
                 updateMarkersVisibility(selectedCams);
-                updateMobileMapPosition();
+                updateMapPosition();
                 requestAnimationFrame(renderConnectorLines);
                 return;
             }
@@ -782,7 +799,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                     </div>
                 `).join('');
             });
-            updateMobileMapPosition();
+            updateMapPosition();
             updateMarkersVisibility(selectedCams);
             requestAnimationFrame(renderConnectorLines);
         }

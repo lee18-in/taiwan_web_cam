@@ -52,6 +52,16 @@
 - 提供北、南、西、東的經緯度滑軌（Range Slider），拖動時會即時更新對應圖層的 Leaflet `ImageOverlay` 邊界（Bounds）。
 - 自動生成 JSON 格式的代碼陣列（例如 `[[s, w], [n, e]]`），方便開發者直接複製並貼回程式碼的 `satBoundsGroup` 中。
 
+### 4. 座標指引線定位機制 (SVG Connector Offset Fix)
+- **問題現象**：在低解析度或行動裝置瀏覽器下，雷射指引線與地標位置會產生偏移。
+- **根本原因**：
+  1. 行動裝置下瀏覽器 UI（如網址列）動態顯示/隱藏導致 CSS 的 `100vh` 與 JS 的 `window.innerHeight` 不一致，而 SVG 之前是使用 `window.innerWidth`/`innerHeight` 作為 viewBox，導致畫布縮放拉伸。
+  2. 地圖容器 `#map` 的尺寸與位置在行動裝置版動態變更（如因為上方的影片牆高度改變），但 Leaflet 的內部尺寸快取未同步更新，導致 `latLngToContainerPoint` 計算出過時的座標。
+- **解決方案**：
+  1. 動態獲取 `#connection-layer` (SVG) 的 `getBoundingClientRect()` 作為基準，並將其 `viewBox` 設定為實際的渲染寬高（`0 0 svgRect.width svgRect.height`）。
+  2. 將計算出的螢幕 client 座標（如影片邊緣或地圖標記座標）減去 `svgRect.left` 和 `svgRect.top`，完美映射至 SVG 內部座標系，對抗所有因視窗捲動或定位產生的位移。
+  3. 將地圖定位重構為統一的 `updateMapPosition()`，在每次更新地圖樣式（不論是手機版或桌機版）後，立即呼叫 `map.invalidateSize({ animate: false })` 強制 Leaflet 刷新容器大小快取。
+
 ---
 
 ## 🛠️ 當前已實作功能
