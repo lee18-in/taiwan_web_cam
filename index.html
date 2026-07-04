@@ -528,9 +528,10 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                     
                     let clientStartX = tileMidX < clientTargetX ? tileRect.right : tileRect.left;
                     let clientStartY = tileMidY;
-                    if (isMobile()) { // 手機版雷射從影片下方射出
+                    if (isMobile()) {
                         clientStartX = tileMidX;
-                        clientStartY = tileRect.bottom;
+                        // 若地標座標在影片上方，雷射從影片上方射出，否則從下方射出 (配合上二下二排版)
+                        clientStartY = clientTargetY < tileRect.top ? tileRect.top : tileRect.bottom;
                     }
                     
                     // 起始點轉為相對於 SVG 畫布的座標
@@ -606,7 +607,16 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         }
 
         function splitWallCams(cams) {
-            if (isMobile()) return { westCams: cams, eastCams: [] }; // 手機版所有影片集中在同一個面板
+            if (isMobile()) {
+                // 手機/低解析度版：先以緯度排序（北 -> 南）分為上下兩組，再以經度排序（西 -> 東）決定左右，避免指引線交錯
+                const sortedCamsByLat = [...cams].sort((a, b) => b.lat - a.lat);
+                const topGroup = sortedCamsByLat.slice(0, 2).sort((a, b) => a.lng - b.lng);
+                const bottomGroup = sortedCamsByLat.slice(2).sort((a, b) => a.lng - b.lng);
+                return {
+                    westCams: topGroup,
+                    eastCams: bottomGroup
+                };
+            }
 
             const westToEastCams = [...cams].sort((a, b) => a.lng - b.lng || b.lat - a.lat);
             const leftCount = cams.length < 4 ? 0 : Math.ceil(westToEastCams.length / 2);
@@ -619,8 +629,18 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
 
         function getVideoWallRects(westCount, eastCount) {
             if (isMobile()) {
-                if (westCount === 0) return [];
-                return [{ left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight / 2 }];
+                const rects = [];
+                const leftWall = document.getElementById('left-video-wall');
+                const rightWall = document.getElementById('right-video-wall');
+                if (westCount && leftWall) {
+                    const h = leftWall.getBoundingClientRect().height;
+                    rects.push({ left: 0, right: window.innerWidth, top: 0, bottom: h });
+                }
+                if (eastCount && rightWall) {
+                    const h = rightWall.getBoundingClientRect().height;
+                    rects.push({ left: 0, right: window.innerWidth, top: window.innerHeight - h, bottom: window.innerHeight });
+                }
+                return rects;
             }
 
             const top = 0;
@@ -705,19 +725,20 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             const leftWall = document.getElementById('left-video-wall');
             const rightWall = document.getElementById('right-video-wall');
             
-            // 確保每次呼叫時 (包含視窗縮放) 皆會更新影片牆的寬度，並動態調整右下角工具位置以避免被影片牆遮擋
+            // 確保每次呼叫時 (包含視窗縮放) 皆會更新影片牆的寬度與佈局
             const leftWidthStr = westCams.length && !mobile ? calculateWallWidth(westCams.length) : '0px';
             const rightWidthStr = eastCams.length && !mobile ? calculateWallWidth(eastCams.length) : '0px';
             leftWall.style.width = mobile ? '100vw' : leftWidthStr;
-            rightWall.style.width = rightWidthStr;
+            rightWall.style.width = mobile ? '100vw' : rightWidthStr;
 
-            // 針對手機板將所有影片牆重置為上方半視窗的網格佈局
             const mapEl = document.getElementById('map');
 
             if (mobile) {
+                // 上方面板 (Left Wall)
                 leftWall.style.height = 'auto';
                 leftWall.style.position = 'fixed';
                 leftWall.style.top = '0';
+                leftWall.style.bottom = 'auto';
                 leftWall.style.left = '0';
                 leftWall.style.right = '0';
                 leftWall.style.borderRight = 'none';
@@ -725,11 +746,27 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                 leftWall.style.gridTemplateColumns = '1fr 1fr';
                 leftWall.style.gridTemplateRows = 'auto';
                 leftWall.style.gridAutoRows = 'minmax(0, auto)';
-                leftWall.style.alignContent = 'start'; // 讓影片群組緊貼上方，消除平均分配空間產生的縫隙
+                leftWall.style.alignContent = 'start';
+
+                // 下方面板 (Right Wall)
+                rightWall.style.height = 'auto';
+                rightWall.style.position = 'fixed';
+                rightWall.style.top = 'auto'; // 解決 CSS 定義 top: 0 的拉伸問題
+                rightWall.style.bottom = '0';
+                rightWall.style.left = '0';
+                rightWall.style.right = '0';
+                rightWall.style.borderLeft = 'none';
+                rightWall.style.borderTop = '1px solid rgba(0, 255, 204, 0.35)';
+                rightWall.style.gridTemplateColumns = '1fr 1fr';
+                rightWall.style.gridTemplateRows = 'auto';
+                rightWall.style.gridAutoRows = 'minmax(0, auto)';
+                rightWall.style.alignContent = 'start';
             } else {
+                // 桌機左面板
                 leftWall.style.height = '100vh';
                 leftWall.style.position = '';
                 leftWall.style.top = '';
+                leftWall.style.bottom = '';
                 leftWall.style.left = '';
                 leftWall.style.right = '';
                 leftWall.style.borderRight = '1px solid rgba(0, 255, 204, 0.35)';
@@ -737,26 +774,44 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                 leftWall.style.gridTemplateColumns = '1fr';
                 leftWall.style.gridAutoRows = '';
                 leftWall.style.alignContent = 'center';
+
+                // 桌機右面板
+                rightWall.style.height = '100vh';
+                rightWall.style.position = '';
+                rightWall.style.top = '';
+                rightWall.style.bottom = '';
+                rightWall.style.left = '';
+                rightWall.style.right = '';
+                rightWall.style.borderLeft = '1px solid rgba(0, 255, 204, 0.35)';
+                rightWall.style.borderTop = 'none';
+                rightWall.style.gridTemplateColumns = '1fr';
+                rightWall.style.gridAutoRows = '';
+                rightWall.style.alignContent = 'center';
             }
 
             const footerLinks = document.getElementById('footer-links');
-            if (footerLinks) footerLinks.style.right = mobile ? '15px' : `calc(${rightWidthStr} + 15px)`;
             const calibTool = document.getElementById('calibration-tool');
-            if (calibTool) calibTool.style.right = mobile ? '20px' : `calc(${rightWidthStr} + 20px)`;
-            const leafletControl = document.querySelector('.leaflet-bottom.leaflet-right');
-            if (leafletControl) leafletControl.style.right = rightWidthStr;
-            const leafletLeftControl = document.querySelector('.leaflet-left');
-            if (leafletLeftControl) leafletLeftControl.style.left = leftWidthStr;
 
             const updateMapPosition = () => {
                 if (mobile) {
-                    const wallHeight = leftWall.getBoundingClientRect().height;
+                    const topHeight = leftWall.getBoundingClientRect().height;
+                    const bottomHeight = rightWall.getBoundingClientRect().height;
                     mapEl.style.position = 'fixed';
-                    mapEl.style.top = `${wallHeight}px`;
+                    mapEl.style.top = `${topHeight}px`;
                     mapEl.style.left = '0';
                     mapEl.style.right = '0';
-                    mapEl.style.bottom = '0';
-                    mapEl.style.height = `${window.innerHeight - wallHeight}px`;
+                    mapEl.style.bottom = `${bottomHeight}px`;
+                    mapEl.style.height = `${window.innerHeight - topHeight - bottomHeight}px`;
+                    
+                    // 動態將頁腳連結與校正工具浮動推移到下方面板的上方
+                    if (footerLinks) {
+                        footerLinks.style.bottom = `${bottomHeight + 12}px`;
+                        footerLinks.style.right = '15px';
+                    }
+                    if (calibTool) {
+                        calibTool.style.bottom = `${bottomHeight + 50}px`;
+                        calibTool.style.right = '20px';
+                    }
                 } else {
                     if (mapEl) {
                         mapEl.style.position = '';
@@ -766,9 +821,22 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                         mapEl.style.bottom = '';
                         mapEl.style.height = '100vh';
                     }
+                    if (footerLinks) {
+                        footerLinks.style.bottom = '';
+                        footerLinks.style.right = `calc(${rightWidthStr} + 15px)`;
+                    }
+                    if (calibTool) {
+                        calibTool.style.bottom = '';
+                        calibTool.style.right = `calc(${rightWidthStr} + 20px)`;
+                    }
                 }
                 map.invalidateSize({ animate: false });
             };
+
+            const leafletControl = document.querySelector('.leaflet-bottom.leaflet-right');
+            if (leafletControl) leafletControl.style.right = mobile ? '0px' : rightWidthStr;
+            const leafletLeftControl = document.querySelector('.leaflet-left');
+            if (leafletLeftControl) leafletLeftControl.style.left = mobile ? '0px' : leftWidthStr;
 
             // 若畫面上要顯示的攝影機名單沒有改變，就不重新渲染 DOM，避免影片頻繁中斷與重新載入
             if (currentRenderedCamIds === newRenderedCamIds) {
