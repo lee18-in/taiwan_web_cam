@@ -1,4 +1,3 @@
-
 <!-- 
 # 台灣即時影像戰情室 
  https://lee18-in.github.io/taiwan_web_cam/
@@ -66,24 +65,27 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
 
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>即時影像雷達雨量 by  lee18.in Andy Lee </title>
-    
+    <title>即時影像雷達雨量 by lee18.in Andy Lee </title>
+
     <!-- 引入 Leaflet 的 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+
     <style>
         /* 讓網頁和地圖填滿整個螢幕 */
-        body, html {
+        body,
+        html {
             margin: 0;
             padding: 0;
             height: 100%;
-            background-color: #121212; /* 戰情室暗色背景 */
+            background-color: #121212;
+            /* 戰情室暗色背景 */
             overflow: hidden;
         }
-        
+
         #map {
             height: 100vh;
             width: 100vw;
@@ -187,6 +189,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                 height: auto;
                 width: 100vw;
             }
+
             .video-wall {
                 bottom: auto;
                 width: 100vw;
@@ -194,9 +197,11 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                 grid-auto-rows: minmax(0, auto);
                 grid-auto-flow: row;
             }
+
             .video-tile {
                 min-height: 0;
             }
+
             /* 手機版：縮小地圖右下角版權與選單的字體 */
             .leaflet-control-attribution {
                 font-size: 8px !important;
@@ -206,8 +211,10 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         /* === 僅針對小螢幕手機的細部微調 (字體縮小) === */
         @media (max-width: 768px) {
             .video-tile-title {
-                font-size: 7px; /* 手機版標題稍微縮小 */
+                font-size: 7px;
+                /* 手機版標題稍微縮小 */
             }
+
             .footer-links {
                 bottom: 12px;
                 padding: 5px 8px;
@@ -223,23 +230,27 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             color: #fff;
             border-radius: 8px;
         }
+
         .leaflet-popup-tip {
             background-color: #1e1e1e;
         }
+
         .leaflet-popup-content {
-            width: 320px !important; /* 固定影片視窗寬度 */
+            width: 320px !important;
+            /* 固定影片視窗寬度 */
             margin: 15px;
         }
 
         /* YouTube 影片的 RWD 容器 (16:9 比例) */
         .video-container {
             position: relative;
-            padding-bottom: 56.25%; 
+            padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
             border-radius: 4px;
             margin-top: 10px;
         }
+
         .video-container iframe {
             position: absolute;
             top: 0;
@@ -256,13 +267,13 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             color: #ffcc00;
             font-size: 14px;
         }
-        
+
         .video-error a {
             color: #00ffcc;
             text-decoration: none;
             font-weight: bold;
         }
-        
+
         .video-error a:hover {
             text-decoration: underline;
         }
@@ -270,7 +281,8 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         /* === 頁腳連結樣式 === */
         .footer-links {
             position: fixed;
-            bottom: 25px; /* 避開 Leaflet 預設版權宣告 */
+            bottom: 25px;
+            /* 避開 Leaflet 預設版權宣告 */
             right: 15px;
             z-index: 1000;
             background-color: rgba(18, 18, 18, 0.8);
@@ -282,26 +294,49 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             backdrop-filter: blur(4px);
             transition: right 0.2s ease-out;
         }
-        .footer-links a { color: #00ffcc; text-decoration: none; font-weight: bold; margin: 0 4px; }
-        .footer-links a { cursor: pointer; color: #00ffcc; text-decoration: none; font-weight: bold; margin: 0 4px; }
-        .footer-links a:hover { color: #fff; text-decoration: underline; }
-        .footer-links a.active { color: #ffcc00; }
+
+        .footer-links a {
+            color: #00ffcc;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 0 4px;
+        }
+
+        .footer-links a {
+            cursor: pointer;
+            color: #00ffcc;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 0 4px;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        .footer-links a.active {
+            color: #ffcc00;
+        }
 
         /* 確保地圖原生版權宣告與縮放控制能動態推移不被擋住 */
         .leaflet-bottom.leaflet-right {
             transition: right 0.2s ease-out;
         }
+
         .leaflet-left {
             transition: left 0.2s ease-out;
         }
-        
+
         /* === 地圖右下角版權宣告字體大小 (電腦版) === */
         .leaflet-control-attribution {
             font-size: 11px !important;
-            background: rgba(0, 0, 0, 0.5) !important; /* 順便讓底色變半透明暗色，更符合戰情室風格 */
+            background: rgba(0, 0, 0, 0.5) !important;
+            /* 順便讓底色變半透明暗色，更符合戰情室風格 */
         }
     </style>
 </head>
+
 <body>
 
     <!-- 地圖容器 -->
@@ -311,28 +346,32 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
     <svg id="connection-layer" class="connection-layer" aria-hidden="true"></svg>
 
     <!-- 臨時疊圖校正工具 (開發輔助用) -->
-    <div id="calibration-tool" style="position: fixed; bottom: 115px; right: 20px; background: rgba(0,0,0,0.85); color: white; padding: 15px; z-index: 2000; border-radius: 8px; border: 1px solid #ffcc00; display: none; backdrop-filter: blur(4px); box-shadow: 0 10px 20px rgba(0,0,0,0.8); transition: right 0.2s ease-out;">
+    <div id="calibration-tool"
+        style="position: fixed; bottom: 115px; right: 20px; background: rgba(0,0,0,0.85); color: white; padding: 15px; z-index: 2000; border-radius: 8px; border: 1px solid #ffcc00; display: none; backdrop-filter: blur(4px); box-shadow: 0 10px 20px rgba(0,0,0,0.8); transition: right 0.2s ease-out;">
         <h4 id="calibration-title" style="margin: 0 0 10px 0; color: #ffcc00; text-align: center;">🛠️ 雨量圖校正工具</h4>
-        <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; font-size: 14px;">
+        <div
+            style="display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; font-size: 14px;">
             <label>北(上)</label>
             <input type="range" id="slider-n" min="24.900" max="26.900" step="0.005" value="25.900">
             <span id="val-n" style="color:#00ffcc; width: 45px;">25.900</span>
-            
+
             <label>南(下)</label>
             <input type="range" id="slider-s" min="20.505" max="22.505" step="0.005" value="21.505">
             <span id="val-s" style="color:#00ffcc; width: 45px;">21.505</span>
-            
+
             <label>西(左)</label>
             <input type="range" id="slider-w" min="118.195" max="120.195" step="0.005" value="119.195">
             <span id="val-w" style="color:#00ffcc; width: 45px;">119.195</span>
-            
+
             <label>東(右)</label>
             <input type="range" id="slider-e" min="122.575" max="124.575" step="0.005" value="123.575">
             <span id="val-e" style="color:#00ffcc; width: 45px;">123.575</span>
         </div>
         <div style="margin-top: 15px; font-size: 12px; color: #aaa;">
             <span id="copy-code-label">請複製此陣列貼回 code 中取代原有的 rainfallBounds：</span><br>
-            <input type="text" id="copy-code" value="[[21.505, 119.195], [25.900, 123.575]]" style="width: 100%; background: #222; color: #ffcc00; border: 1px solid #555; padding: 5px; margin-top: 5px; font-family: monospace; text-align: center;" readonly>
+            <input type="text" id="copy-code" value="[[21.505, 119.195], [25.900, 123.575]]"
+                style="width: 100%; background: #222; color: #ffcc00; border: 1px solid #555; padding: 5px; margin-top: 5px; font-family: monospace; text-align: center;"
+                readonly>
         </div>
     </div>
 
@@ -350,7 +389,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
 
     <!-- 引入 Leaflet 的 JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <script>
         // 1. 初始化地圖，設定中心點為台灣地理中心碑 (緯度: 23.5825, 經度: 120.5855)，縮放級別為 8
         const map = L.map('map').setView([23.5825, 120.5855], 8);
@@ -368,23 +407,23 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         // ==========================================
 
 
-        const satBoundsGroup  = {
+        const satBoundsGroup = {
             '1350': [[19.030, 115.925], [28.215, 126.070]],
-            '800':  [[19.050, 115.935], [28.195, 126.055]],
+            '800': [[19.050, 115.935], [28.195, 126.055]],
             'radarBounds': [[20.455, 118.000], [26.480, 124.000]],
             'rainfallBounds': [[21.505, 119.195], [25.900, 123.575]],
             'sfcBounds': [[-0.340, 80.630], [56.690, 167.995]]
         };
         const IMG_opacity = 0.3; // 預設疊圖透明度
         const allLayers = {
-            radar:     { url: 'https://www.cwa.gov.tw/Data/radar/CV1_TW_3600.png',                             boundsGroup: 'radarBounds',    opacity: IMG_opacity, calType: 'radar'    },
-            rainfall:  { url: 'https://www.cwa.gov.tw/Data/rainfall/QZJ.jpg',                                  boundsGroup: 'rainfallBounds', opacity: IMG_opacity, calType: 'rainfall' },
-            visible:   { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_VIS_Gray_1350/TWI_VIS_Gray_1350.jpg', boundsGroup: '1350',           opacity: IMG_opacity, calType: 'sat1350' },
-            trueColor: { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_TRGB_1350/TWI_TRGB_1350.jpg',         boundsGroup: '1350',           opacity: IMG_opacity, calType: 'sat1350' },
-            color:     { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_IR1_CR_800/TWI_IR1_CR_800.jpg',       boundsGroup: '800',            opacity: IMG_opacity, calType: 'sat800'  },
-            enhanced:  { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_IR1_MB_800/TWI_IR1_MB_800.jpg',       boundsGroup: '800',            opacity: IMG_opacity, calType: 'sat800'  },
-            bw:        { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_IR1_Gray_800/TWI_IR1_Gray_800.jpg',   boundsGroup: '800',            opacity: IMG_opacity, calType: 'sat800'  },
-            sfc:       { url: 'https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg',                              boundsGroup: 'sfcBounds',      opacity: IMG_opacity, calType: 'sfc'     }
+            radar: { url: 'https://www.cwa.gov.tw/Data/radar/CV1_TW_3600.png', boundsGroup: 'radarBounds', opacity: IMG_opacity, calType: 'radar' },
+            rainfall: { url: 'https://www.cwa.gov.tw/Data/rainfall/QZJ.jpg', boundsGroup: 'rainfallBounds', opacity: IMG_opacity, calType: 'rainfall' },
+            visible: { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_VIS_Gray_1350/TWI_VIS_Gray_1350.jpg', boundsGroup: '1350', opacity: IMG_opacity, calType: 'sat1350' },
+            trueColor: { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_TRGB_1350/TWI_TRGB_1350.jpg', boundsGroup: '1350', opacity: IMG_opacity, calType: 'sat1350' },
+            color: { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_IR1_CR_800/TWI_IR1_CR_800.jpg', boundsGroup: '800', opacity: IMG_opacity, calType: 'sat800' },
+            enhanced: { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_IR1_MB_800/TWI_IR1_MB_800.jpg', boundsGroup: '800', opacity: IMG_opacity, calType: 'sat800' },
+            bw: { url: 'https://www.cwa.gov.tw/Data/satellite/TWI_IR1_Gray_800/TWI_IR1_Gray_800.jpg', boundsGroup: '800', opacity: IMG_opacity, calType: 'sat800' },
+            sfc: { url: 'https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg', boundsGroup: 'sfcBounds', opacity: IMG_opacity, calType: 'sfc' }
         };
 
         Object.entries(allLayers).forEach(([key, cfg]) => {
@@ -401,27 +440,30 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         //    畫面的地標數量超過影片視窗框架能容納的數量時，才會依照等級優先顯示較高等級的地標，
         //    較低等級的地標會暫時被隱藏，直到畫面縮小到影片框架數量足夠 容納較低等級的地標時才會顯示出來
         //    若優先權相同，則依照距離中心點較近的地標顯示優先
-        
+
+        https://youtu.be/rvc1klNIgQc
+
         const webcams = [
             // === 第零級 影片視窗框架不足時 優先顯示高等級的影片視窗 ===
-//          { level: 0, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第零級" },       
+            //          { level: 0, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第零級" },       
             { level: 0, videoId: "z_fY1pj1VBw", lat: 25.0273, lng: 121.5706, name: "象山看台北" },
             { level: 0, videoId: "lhXXhDyjFtI", lat: 24.1434, lng: 120.5744, name: "台中望高寮" },
-            { level: 0, videoId: "C03Itx8iSC0", lat: 22.6274, lng: 120.2634, name: "高雄壽山情人觀景台" },   
-            { level: 0, videoId: "dQ7Sd6PGLdA", lat: 23.1263, lng: 121.4153, name: "三仙台" },            
-            
+            { level: 0, videoId: "C03Itx8iSC0", lat: 22.6274, lng: 120.2634, name: "高雄壽山情人觀景台" },
+            { level: 0, videoId: "rvc1klNIgQc", lat: 22.9129, lng: 121.1195, name: "鹿野高台" },
 
-//          { level: 1, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第一級 次高優先權" },                 
+
+            //          { level: 1, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第一級 次高優先權" },                 
             { level: 1, videoId: "91PfFoqvuUk", lat: 25.0797, lng: 121.2342, name: "桃園國際機場" },
             { level: 1, videoId: "j2L_559nCjc", lat: 23.4388, lng: 120.6448, name: "阿里山二延平步道" },
             { level: 1, videoId: "jUnFuJSj0OU", lat: 21.9582, lng: 120.7645, name: "墾丁南灣" },
             { level: 1, videoId: "Jx01B71j0wc", lat: 24.1370, lng: 121.2757, name: "合歡山武嶺亭" },
 
-//          { level: 2, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第二級 次低優先權" },  
+            //          { level: 2, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第二級 次低優先權" },  
+            { level: 2, videoId: "dQ7Sd6PGLdA", lat: 23.1263, lng: 121.4153, name: "三仙台" },
             { level: 2, videoId: "JkoXcXI04Qk", lat: 23.4598, lng: 121.5068, name: "東海岸大石鼻山" },
             { level: 2, videoId: "GUCaVR88ZFU", lat: 24.8115, lng: 121.2443, name: "石門水庫" },
-            { level: 2, videoId: "AKl3F6cAY2Q", lat: 22.7934, lng: 121.1946, name: "加路蘭遊憩區" },            
-            { level: 2, videoId: "tD_a03trUvE", lat: 24.9872, lng: 121.0156, name: "永安漁港" },            
+            { level: 2, videoId: "AKl3F6cAY2Q", lat: 22.7934, lng: 121.1946, name: "加路蘭遊憩區" },
+            { level: 2, videoId: "tD_a03trUvE", lat: 24.9872, lng: 121.0156, name: "永安漁港" },
             { level: 2, videoId: "fjhg3gAnMFg", lat: 24.3126, lng: 120.5496, name: "高美濕地" },
             { level: 2, videoId: "iJphhU-iaTA", lat: 25.2392, lng: 121.6293, name: "金山中角灣" },
             { level: 2, videoId: "ka7FV0sCvxQ", lat: 22.6105, lng: 120.2671, name: "高雄旗津海水浴場" },
@@ -446,7 +488,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             { level: 2, videoId: "di-4DCblWq4", lat: 25.1585, lng: 121.4332, name: "八里左岸" },
             { level: 2, videoId: "Ndo_8RuefH4", lat: 25.0569, lng: 121.5033, name: "大稻埕碼頭" },
 
-//          { level: 3, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第三級 低優先權" },    
+            //          { level: 3, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第三級 低優先權" },    
             { level: 3, videoId: "XUWjAsajKXg", lat: 24.8851, lng: 121.2874, name: "大溪老街" },
             { level: 3, videoId: "dY2cRNr5Buw", lat: 23.5604, lng: 120.5981, name: "阿里山 太平雲梯" },
             { level: 3, videoId: "tu_gsIkNt-w", lat: 25.0112, lng: 121.3288, name: "桃園虎頭山環保公園" },
@@ -462,7 +504,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             { level: 3, videoId: "P0CYZnOGxHU", lat: 22.9997, lng: 120.2270, name: "台南市重要路口" },
             { level: 3, videoId: "qPXYKz_i9dY", lat: 25.0169, lng: 121.4627, name: "新北市重要路口" },
 
-//          { level: 4, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第四級 最低優先權" },  
+            //          { level: 4, videoId: "xxxxxxxxxxx", lat: 12.3456, lng: 123.4567, name: "第四級 最低優先權" },  
             { level: 4, videoId: "yeoV-wBdoxQ", lat: 22.9150, lng: 120.1750, name: "黃金海岸，台南市南區" },
             { level: 4, videoId: "RttyIGHbN_w", lat: 25.1610, lng: 121.5390, name: "陽明書屋" },
             { level: 4, videoId: "-srNHTE-Nf0", lat: 24.4440, lng: 118.3580, name: "金門134高地" },
@@ -514,18 +556,18 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                     const lat = Number(tile.dataset.lat);
                     const lng = Number(tile.dataset.lng);
                     const targetPoint = map.latLngToContainerPoint([lat, lng]);
-                    
+
                     // 地標在地圖上的絕對 Client 座標
                     const clientTargetX = mapRect.left + targetPoint.x;
                     const clientTargetY = mapRect.top + targetPoint.y;
-                    
+
                     // 轉為相對於 SVG 畫布的座標
                     const targetX = clientTargetX - svgRect.left;
                     const targetY = clientTargetY - svgRect.top;
-                    
+
                     const tileMidY = tileRect.top + tileRect.height / 2;
                     const tileMidX = tileRect.left + tileRect.width / 2;
-                    
+
                     let clientStartX = tileMidX < clientTargetX ? tileRect.right : tileRect.left;
                     let clientStartY = tileMidY;
                     if (isMobile()) {
@@ -533,7 +575,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                         // 若地標座標在影片上方，雷射從影片上方射出，否則從下方射出 (配合上二下二排版)
                         clientStartY = clientTargetY < tileRect.top ? tileRect.top : tileRect.bottom;
                     }
-                    
+
                     // 起始點轉為相對於 SVG 畫布的座標
                     const startX = clientStartX - svgRect.left;
                     const startY = clientStartY - svgRect.top;
@@ -589,11 +631,11 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         function selectWallCams(cams) {
             const maxTiles = getMaxVideoTiles();
             const center = map.getCenter();
-            
+
             // 計算每個點到地圖中心的距離，以便當 level 相同時使用距離排序
-            const camsWithDistance = cams.map((cam) => ({ 
-                ...cam, 
-                distance: map.distance(center, [cam.lat, cam.lng]) 
+            const camsWithDistance = cams.map((cam) => ({
+                ...cam,
+                distance: map.distance(center, [cam.lat, cam.lng])
             }));
 
             if (camsWithDistance.length <= maxTiles) {
@@ -724,7 +766,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
 
             const leftWall = document.getElementById('left-video-wall');
             const rightWall = document.getElementById('right-video-wall');
-            
+
             // 確保每次呼叫時 (包含視窗縮放) 皆會更新影片牆的寬度與佈局
             const leftWidthStr = westCams.length && !mobile ? calculateWallWidth(westCams.length) : '0px';
             const rightWidthStr = eastCams.length && !mobile ? calculateWallWidth(eastCams.length) : '0px';
@@ -802,7 +844,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                     mapEl.style.right = '0';
                     mapEl.style.bottom = `${bottomHeight}px`;
                     mapEl.style.height = `${window.innerHeight - topHeight - bottomHeight}px`;
-                    
+
                     // 動態將頁腳連結與校正工具浮動推移到下方面板的上方
                     if (footerLinks) {
                         footerLinks.style.bottom = `${bottomHeight + 12}px`;
@@ -877,8 +919,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         }
 
         // 5. 巡迴資料並建立標記點與彈出視窗
-        webcams.forEach(cam => 
-        {
+        webcams.forEach(cam => {
             const youtubeEmbedUrl = createYoutubeEmbedUrl(cam.videoId, true);
             const popupContent = `
                 <div class="cam-title">🔴 ${cam.name}</div>
@@ -901,10 +942,10 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                     map.setView([cam.lat, cam.lng], map.getZoom() + 2);
                 });
         }
-    );
+        );
 
         // 6. 更新標記顯示狀態 (根據當前畫面影片數量)
-        
+
         function updateMarkersVisibility(displayedCams = getDisplayCams()) {
             const displayedCamNames = new Set(displayedCams.map(cam => cam.name));
 
@@ -933,7 +974,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
                     level4Group.addLayer(cam.marker);
                 }
             });
-            
+
             // 所有有顯示影片的圖層及隱藏標記圖層預設都加上地圖
             if (!map.hasLayer(level0Group)) map.addLayer(level0Group);
             if (!map.hasLayer(level1Group)) map.addLayer(level1Group);
@@ -1125,4 +1166,5 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
         });
     </script>
 </body>
+
 </html>
