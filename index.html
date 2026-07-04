@@ -178,8 +178,8 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             }
         }
 
-        /* === 手機版專屬排版 (上影片，下地圖) === */
-        @media (max-width: 768px) {
+        /* === 手機/平板/低解析度版專屬排版 (上影片，下地圖) === */
+        @media (max-width: 1024px) {
             #map {
                 position: fixed;
                 top: 0;
@@ -197,19 +197,23 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
             .video-tile {
                 min-height: 0;
             }
+            /* 手機版：縮小地圖右下角版權與選單的字體 */
+            .leaflet-control-attribution {
+                font-size: 8px !important;
+            }
+        }
+
+        /* === 僅針對小螢幕手機的細部微調 (字體縮小) === */
+        @media (max-width: 768px) {
             .video-tile-title {
                 font-size: 7px; /* 手機版標題稍微縮小 */
             }
             .footer-links {
                 bottom: 12px;
                 padding: 5px 8px;
-                font-size:6px;
+                font-size: 6px;
                 line-height: 1.5;
                 text-align: right;
-            }
-            /* 手機版：縮小地圖右下角版權與選單的字體 */
-            .leaflet-control-attribution {
-                font-size: 8px !important;
             }
         }
 
@@ -477,7 +481,7 @@ https://www.cwa.gov.tw/Data/fcst_img/SFCcombo.jpg
 
 
         const youtubeOrigin = window.location.origin === 'null' ? '' : `&origin=${encodeURIComponent(window.location.origin)}`;
-        const isMobile = () => window.innerWidth <= 768;
+        const isMobile = () => window.innerWidth <= 1024;
         const getMaxVideoTiles = () => isMobile() ? 4 : 8; // 手機版最多顯示 4 個，電腦版 8 個
 
         function createYoutubeEmbedUrl(videoId, autoplay = false) {
