@@ -1,5 +1,5 @@
-
-
+<!-- AI AGENTS: Read ./AGENTS.md first, then ./LLM_MEMORY.md.
+     Do NOT write planning content into this file. -->
 
 # 🇹🇼 台灣即時影像戰情室 (Taiwan Web Cam War Room)
 

@@ -1,6 +1,14 @@
-# LLM 協作記憶 (Taiwan Web Cam War Room)
+# LLM_MEMORY.md — 工作記憶 (Taiwan Web Cam War Room)
 
 此檔案為跨 LLM、跨機器、跨平台的協作記憶庫。主要紀錄專案架構、技術細節、已實現功能、已知限制與後續開發方向，供後續接手的 AI 助手快速理解上下文。
+
+## A. 目前狀態（每次交接必更新）
+
+- 目前階段: **[build]**
+- 最後更新: 2026-07-05 — 當時階段: [build]
+- 最新 commit: 7a3063a Please provide the code changes or file diffs you would like me to summarize.
+- 進行中任務: 導入多 agent 工作流系統（AGENTS.md、CLAUDE.md 等）
+- 阻塞點: 無
 
 ---
 
