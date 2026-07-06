@@ -96,3 +96,24 @@
 - [ ] **使用者偏好儲存**：實作「鏡頭優先等級」或「自訂顯示清單」面板，並結合 LocalStorage 儲存使用者設定。
 - [ ] **更多即時資訊疊加**：加入國道時速壅塞圖層、累積雨量具體數值標記等。
 - [ ] **YouTube API 錯誤處理**：在 Iframe 載入失敗或直播已結束時，顯示友善的替代畫面或自動替換其他備份攝影機。
+
+---
+
+## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-07-06 18:30 [maintain] 使用工具: Claude Haiku
+
+- 完成了什麼: 導入 Playbook v2 工作流系統。覆蓋 AGENTS.md 至 v2 版本（引入 §2.1 Review Loop、交接日誌書寫規範、§4 Git Hook 強制約束）；遷移舊 AGENTS.md §5 的技術脈絡值至 LLM_MEMORY.md E 區；建立 scripts/hooks/{pre-commit,commit-msg}；執行 `git config core.hooksPath scripts/hooks` 啟用。
+- 下一個 agent 該做什麼: 無
+
+---
+
+## E. 專案技術脈絡(依專案填寫,agent 得隨專案實況更新,保持精簡)
+
+- 建置指令: 無（純 HTML/CSS/JavaScript，單一 index.html，無構建步驟）
+- 測試指令: 無（目前無自動測試框架）
+- 程式碼慣例:
+  - 原生 HTML/CSS/JavaScript（不使用框架）
+  - 所有邏輯在單一 index.html 中實作
+  - 依賴：Leaflet.js (地圖)、CartoDB (底圖)、YouTube Iframe API (影音)
+  - 遵循既有的「單一檔案」架構，不引入新的構建工具
