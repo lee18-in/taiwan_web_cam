@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Wind, Layers } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { sortMobileCams } from '../../core/spatialSorter';
 import { useWarRoomStore } from '../../store/useWarRoomStore';
 import type { PresetFilter, Webcam } from '../../types/webcam';
@@ -19,11 +19,6 @@ const MOBILE_CHIPS: { id: PresetFilter; label: string }[] = [
   { id: 'pinned', label: '📌 釘選' }
 ];
 
-/**
- * 手機／平板全新設計（<= 1024px）：
- * 捨棄舊版 6px 蟻字與上下夾心排版，採滿版地圖＋三段式底部抽屜（收合／半開卡片／展開全覽），
- * 並預設同時最多僅自動播 2 支直播避免手機發燙耗電（其餘點一下立即啟動）。
- */
 export function MobileBottomSheet({ displayedCams, allWebcams }: MobileBottomSheetProps) {
   const sheetState = useWarRoomStore((s) => s.mobileSheetState);
   const pinnedIds = useWarRoomStore((s) => s.pinnedIds);
@@ -31,7 +26,6 @@ export function MobileBottomSheet({ displayedCams, allWebcams }: MobileBottomShe
   const activatedFacadeIds = useWarRoomStore((s) => s.activatedFacadeIds);
   const telemetryById = useWarRoomStore((s) => s.telemetryById);
   const presetFilter = useWarRoomStore((s) => s.presetFilter);
-  const windEnabled = useWarRoomStore((s) => s.windEnabled);
 
   const setSheetState = useWarRoomStore((s) => s.setMobileSheetState);
   const togglePin = useWarRoomStore((s) => s.togglePin);
@@ -41,8 +35,6 @@ export function MobileBottomSheet({ displayedCams, allWebcams }: MobileBottomShe
   const activateFacade = useWarRoomStore((s) => s.activateFacade);
   const markOffline = useWarRoomStore((s) => s.markOffline);
   const setPresetFilter = useWarRoomStore((s) => s.setPresetFilter);
-  const setWindEnabled = useWarRoomStore((s) => s.setWindEnabled);
-  const setWeatherDrawerOpen = useWarRoomStore((s) => s.setWeatherDrawerOpen);
 
   const orderedCams = sortMobileCams(displayedCams, pinnedIds);
   const pinnedSet = new Set(pinnedIds);
@@ -58,14 +50,13 @@ export function MobileBottomSheet({ displayedCams, allWebcams }: MobileBottomShe
     <section
       className={`hud-glass-strong fixed inset-x-0 bottom-0 z-[750] flex flex-col rounded-t-3xl border-b-0 transition-[height] duration-300 ease-out ${
         sheetState === 'collapsed'
-          ? 'h-[72px]'
+          ? 'h-[68px]'
           : sheetState === 'half'
           ? 'h-[42vh] min-h-[260px]'
           : 'h-[78vh]'
       }`}
     >
-      {/* 拖曳把手與摘要列 */}
-      <div className="flex shrink-0 flex-col items-center px-3 pt-2 pb-2">
+      <div className="flex shrink-0 flex-col items-center px-3.5 pt-2 pb-2">
         <button
           type="button"
           onClick={cycleSheet}
@@ -92,47 +83,28 @@ export function MobileBottomSheet({ displayedCams, allWebcams }: MobileBottomShe
             </div>
           </button>
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setWindEnabled(!windEnabled)}
-              className={`rounded-xl border p-2 cursor-pointer ${
-                windEnabled
-                  ? 'border-cyan-400/50 bg-cyan-500/20 text-cyan-200'
-                  : 'border-slate-700 bg-slate-900/80 text-slate-400'
-              }`}
-              aria-label="開關動態風場"
-            >
-              <Wind className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setWeatherDrawerOpen(true)}
-              className="rounded-xl border border-slate-700 bg-slate-900/80 p-2 text-sky-300 cursor-pointer"
-              aria-label="開啟氣象圖層"
-            >
-              <Layers className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={cycleSheet}
-              className="rounded-xl border border-cyan-400/40 bg-cyan-500/15 p-2 text-cyan-200 cursor-pointer"
-              aria-label="切換抽屜大小"
-            >
-              {sheetState === 'expanded' ? (
+          <button
+            type="button"
+            onClick={cycleSheet}
+            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-medium text-cyan-200 cursor-pointer"
+          >
+            {sheetState === 'expanded' ? (
+              <>
                 <ChevronDown className="h-4 w-4" />
-              ) : (
+                收合
+              </>
+            ) : (
+              <>
                 <ChevronUp className="h-4 w-4" />
-              )}
-            </button>
-          </div>
+                展開
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* 內容區（半開或展開才渲染，收合時釋放影音節省手機電量） */}
       {sheetState !== 'collapsed' && (
         <div className="thin-scroll flex-1 overflow-y-auto px-3 pb-5">
-          {/* 情境篩選膠囊列 */}
           <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
             {MOBILE_CHIPS.map((chip) => (
               <button
@@ -157,7 +129,6 @@ export function MobileBottomSheet({ displayedCams, allWebcams }: MobileBottomShe
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {orderedCams.map((cam, idx) => {
-                // 手機預設僅自動播前 2 支，其餘點擊即播，避免發燙掉幀
                 const shouldPlayLive = idx < 2 || activatedSet.has(cam.id);
                 return (
                   <div key={cam.id} className="aspect-[16/11] w-full">

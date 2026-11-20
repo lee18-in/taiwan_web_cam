@@ -1,24 +1,23 @@
 import type { PresetFilter } from '../types/webcam';
-import type { BasemapId, WeatherLayerId } from '../types/weather';
+import type { ActiveWeatherLayerId, BasemapId, WeatherLayerId } from '../types/weather';
 
 export interface UrlShareState {
   lat?: number;
   lng?: number;
   zoom?: number;
   basemap?: BasemapId;
-  labelsOnTop?: boolean;
-  enabledLayers?: WeatherLayerId[];
+  activeLayer?: ActiveWeatherLayerId;
   pinnedIds?: string[];
   presetFilter?: PresetFilter;
   windEnabled?: boolean;
-  rainViewerEnabled?: boolean;
   maxTiles?: 4 | 6 | 8;
   kioskMode?: boolean;
   debugCalib?: boolean;
 }
 
 const VALID_BASEMAPS = new Set<BasemapId>(['dark', 'satellite', 'nlsc']);
-const VALID_LAYERS = new Set<WeatherLayerId>([
+const VALID_ACTIVE_LAYERS = new Set<Exclude<ActiveWeatherLayerId, null>>([
+  'rainViewer',
   'radar',
   'rainfall',
   'visible',
@@ -62,18 +61,22 @@ export function parseUrlState(search: string): UrlShareState {
     out.basemap = base;
   }
 
-  if (params.has('labels')) {
-    out.labelsOnTop = params.get('labels') !== '0';
-  }
-
-  if (params.has('layers')) {
-    const raw = params.get('layers') ?? '';
+  // 新版單選參數 ?layer=rainViewer | radar | rainfall | trueColor | ... | none
+  if (params.has('layer')) {
+    const raw = params.get('layer') ?? '';
     if (raw === 'none' || raw === '') {
-      out.enabledLayers = [];
-    } else {
-      out.enabledLayers = raw
-        .split(',')
-        .filter((k): k is WeatherLayerId => VALID_LAYERS.has(k as WeatherLayerId));
+      out.activeLayer = null;
+    } else if (VALID_ACTIVE_LAYERS.has(raw as Exclude<ActiveWeatherLayerId, null>)) {
+      out.activeLayer = raw as ActiveWeatherLayerId;
+    }
+  } else if (params.get('rv') === '1') {
+    out.activeLayer = 'rainViewer';
+  } else if (params.has('layers')) {
+    const first = (params.get('layers') ?? '').split(',')[0] as WeatherLayerId;
+    if (!first || first === ('none' as string)) {
+      out.activeLayer = null;
+    } else if (VALID_ACTIVE_LAYERS.has(first)) {
+      out.activeLayer = first;
     }
   }
 
@@ -94,10 +97,6 @@ export function parseUrlState(search: string): UrlShareState {
     out.windEnabled = params.get('wind') === '1';
   }
 
-  if (params.has('rv')) {
-    out.rainViewerEnabled = params.get('rv') === '1';
-  }
-
   const tiles = Number(params.get('tiles'));
   if (tiles === 4 || tiles === 6 || tiles === 8) {
     out.maxTiles = tiles;
@@ -114,22 +113,34 @@ export function parseUrlState(search: string): UrlShareState {
   return out;
 }
 
-export function buildShareUrl(baseUrl: string, state: Required<Pick<
-  UrlShareState,
-  'lat' | 'lng' | 'zoom' | 'basemap' | 'labelsOnTop' | 'enabledLayers' | 'pinnedIds' | 'presetFilter' | 'windEnabled' | 'rainViewerEnabled' | 'maxTiles' | 'kioskMode'
->>): string {
+export function buildShareUrl(
+  baseUrl: string,
+  state: Required<
+    Pick<
+      UrlShareState,
+      | 'lat'
+      | 'lng'
+      | 'zoom'
+      | 'basemap'
+      | 'activeLayer'
+      | 'pinnedIds'
+      | 'presetFilter'
+      | 'windEnabled'
+      | 'maxTiles'
+      | 'kioskMode'
+    >
+  >
+): string {
   const url = new URL(baseUrl);
   const p = new URLSearchParams();
   p.set('lat', state.lat.toFixed(4));
   p.set('lng', state.lng.toFixed(4));
   p.set('z', String(Math.round(state.zoom)));
   p.set('base', state.basemap);
-  p.set('labels', state.labelsOnTop ? '1' : '0');
-  p.set('layers', state.enabledLayers.length > 0 ? state.enabledLayers.join(',') : 'none');
+  p.set('layer', state.activeLayer ?? 'none');
   if (state.pinnedIds.length > 0) p.set('pins', state.pinnedIds.join(','));
   if (state.presetFilter !== 'all') p.set('tag', state.presetFilter);
-  if (state.windEnabled) p.set('wind', '1');
-  if (state.rainViewerEnabled) p.set('rv', '1');
+  p.set('wind', state.windEnabled ? '1' : '0');
   if (state.maxTiles !== 4) p.set('tiles', String(state.maxTiles));
   if (state.kioskMode) p.set('kiosk', '1');
   url.search = p.toString();

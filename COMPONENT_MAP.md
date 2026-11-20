@@ -19,13 +19,14 @@
 |---|---|---|---|
 | Layer 6 | `markerPane` + SVG Overlay | `440–450+` | Canvas 未入選紅點、活躍發光聲納標記、節點復用 45° 戰術脈衝雷射連線（`ConnectorOverlay.tsx`） |
 | Layer 5 | `labels-overlay` | `380` | **內政部國土測繪中心 `NLSC EMAP2` 透明繁體中文地名與國道路網**（浮於所有雲圖與雷達之上，避免雨帶蓋字） |
-| Layer 4 | `weather-wind` | `350` | `WindFlowCanvas.ts`（Open-Meteo 6×6 網格雙線性內插 Canvas 2D 動態風場粒子流線） |
-| Layer 3 | `weather-radar` | `320` | RainViewer 2 小時透明背景動態雷達圖磚（`maxNativeZoom: 7`）＋ CWA 雷達／累積雨量疊圖 |
-| Layer 2 | `weather-cloud` | `300` | CWA 5 種衛星雲圖與地面等壓天氣圖（支援多圖層疊加、獨立透明度與 `mix-blend-mode: screen`） |
-| Layer 1 | `tilePane` | `200` | 3 種免費無浮水印底圖互斥單選（Esri 暗黑畫布、Esri 衛星實景、NLSC 台灣繁中電子地圖） |
+| Layer 4 | `weather-wind` | `350` | `WindFlowCanvas.ts`（Open-Meteo 6×6 網格→36×28 螢幕查表、5 色桶批次描邊、30fps＋分頁隱藏暫停之低 CPU 動態風場流線；獨立開關） |
+| Layer 3 | `weather-radar` | `320` | 嚴格單選互斥降水層：RainViewer 2 小時透明動態雨帶（`maxNativeZoom: 7`）或 CWA 雷達／累積雨量（依底圖自動配最佳透明度） |
+| Layer 2 | `weather-cloud` | `300` | 嚴格單選互斥雲系層：CWA 5 種衛星雲圖或地面等壓天氣圖（自動配最佳透明度與 `mix-blend-mode: screen`） |
+| Layer 1 | `tilePane` | `200` | 3 種免費無浮水印底圖循環切換（Esri 暗黑畫布、Esri 衛星實景、NLSC 台灣繁中電子地圖） |
 
 ### 2. 核心模組分工與契約
-- **資料層**：`src/data/webcams.json`（完整遷移 56 筆，含 `id`/`region`/`county`/`tags`/`stream`，已以腳本比對 `public/legacy.html` 100% 吻合）、`src/data/mapLayers.ts`（3 底圖、8 CWA 圖層、5 組已校正邊界、4 一鍵組合、dBZ/mm 色階圖例）。
+- **資料層**：`src/data/webcams.json`（完整遷移 56 筆，含 `id`/`region`/`county`/`tags`/`stream`，已以腳本比對 `public/legacy.html` 100% 吻合）、`src/data/mapLayers.ts`（3 底圖、8 CWA 圖層自動最佳透明度、5 組已校正邊界）。
+- **極簡操作契約（使用者 2026-11-20 明示定案）**：廢除複雜圖層抽屜、多層疊加與手動透明度滑桿；由 `WeatherQuickBar.tsx` 採**嚴格單選互斥（「點啥顯示啥、其他全關」）**，唯獨「動態風場」維持獨立開關、「底圖」一鍵循環切換。
 - **純演算法層（`src/core/`，100% Vitest 單元測試覆蓋）**：`cameraSelector.ts`（釘選優先上限 4 支＋`level` 升冪＋距離排序＋離線自動遞補＋遮擋排除）、`spatialSorter.ts`（左右牆均衡切分與北→南排序）、`connectorGeometry.ts`（45° 戰術折線）、`urlSync.ts`（分享連結編解碼）。
 - **零重載影片牆（`DesktopVideoPool.tsx`）**：所有顯示中 `VideoCard` 維持於**單一扁平 React 清單（DOM 順序依 `cam.id` 字典序固定）**，透過 CSS `transform: translate3d(x,y,0)` 定位至左右牆格位，確保拖動地圖或跨牆換位時不觸發 `insertBefore` 與 YouTube iframe 重載。預設前 4 順位自動錯峰直播，其餘格位採縮圖延遲啟動（可切換全直播滿載）。
 - **SVG 座標與行動端契約**：`ConnectorOverlay.tsx` 以 `#connection-layer` 實際 `getBoundingClientRect()` 設定 `viewBox` 並減去 `svgRect.left`/`top`；手機版（`<= 1024px`）採滿版地圖＋三段式 `MobileBottomSheet.tsx`（同時最多自動播 2 支省電）。

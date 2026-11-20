@@ -10,6 +10,9 @@ export type WeatherLayerId =
   | 'bw'
   | 'sfc';
 
+/** 嚴格單選互斥氣象圖層（含 RainViewer 動態雨帶與 8 組 CWA 官方圖資；null 表示全部關閉） */
+export type ActiveWeatherLayerId = 'rainViewer' | WeatherLayerId | null;
+
 export type CalibrationGroupId =
   | 'radar'
   | 'rainfall'
@@ -31,7 +34,6 @@ export interface BasemapConfig {
   maxZoom: number;
   attribution: string;
   supportsLabelsOnTop: boolean;
-  previewGradient: string;
 }
 
 export interface WeatherLayerConfig {
@@ -42,15 +44,10 @@ export interface WeatherLayerConfig {
   url: string;
   pane: 'weather-cloud' | 'weather-radar';
   calibrationGroup: CalibrationGroupId;
-  defaultOpacity: number;
-  defaultBlendMode: BlendMode;
-  legendType?: 'radar' | 'rainfall';
-}
-
-export interface OverlayRuntimeState {
-  enabled: boolean;
-  opacity: number;
-  blendMode: BlendMode;
+  /** 系統依底圖自動套用之最佳透明度（暗黑／衛星 vs 淺色繁中） */
+  optimalOpacityDark: number;
+  optimalOpacityLight: number;
+  blendModeDark: BlendMode;
 }
 
 export interface CalibrationRange {
@@ -65,17 +62,6 @@ export interface CalibrationGroupMeta {
   title: string;
   defaultBounds: BoundsTuple;
   range: CalibrationRange;
-}
-
-export interface WarRoomComboPreset {
-  id: string;
-  label: string;
-  description: string;
-  basemap: BasemapId;
-  labelsOnTop: boolean;
-  windEnabled: boolean;
-  rainViewerEnabled: boolean;
-  overlays: Partial<Record<WeatherLayerId, { enabled: boolean; opacity: number; blendMode?: BlendMode }>>;
 }
 
 export interface RainViewerFrame {

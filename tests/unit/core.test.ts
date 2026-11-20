@@ -147,18 +147,16 @@ describe('connectorGeometry 45° 戰術折線', () => {
 });
 
 describe('urlSync 分享連結序列化與還原', () => {
-  it('應能完整來回編解碼視角、底圖、多圖層、釘選與動態層開關', () => {
+  it('應能完整來回編解碼視角、底圖、單選氣象層、釘選與風場開關', () => {
     const url = buildShareUrl('https://lee18-in.github.io/taiwan_web_cam/', {
       lat: 23.5825,
       lng: 120.5855,
       zoom: 9,
       basemap: 'satellite',
-      labelsOnTop: true,
-      enabledLayers: ['radar', 'trueColor'],
+      activeLayer: 'trueColor',
       pinnedIds: ['kenting-nanwan', 'taitung-sanxiantai'],
       presetFilter: 'coast',
       windEnabled: true,
-      rainViewerEnabled: false,
       maxTiles: 6,
       kioskMode: false
     });
@@ -167,17 +165,19 @@ describe('urlSync 分享連結序列化與還原', () => {
     expect(parsed.lng).toBeCloseTo(120.5855, 4);
     expect(parsed.zoom).toBe(9);
     expect(parsed.basemap).toBe('satellite');
-    expect(parsed.enabledLayers).toEqual(['radar', 'trueColor']);
+    expect(parsed.activeLayer).toBe('trueColor');
     expect(parsed.pinnedIds).toEqual(['kenting-nanwan', 'taitung-sanxiantai']);
     expect(parsed.presetFilter).toBe('coast');
     expect(parsed.windEnabled).toBe(true);
     expect(parsed.maxTiles).toBe(6);
   });
 
-  it('應正確解析 ?debug=calib 開啟校正模式', () => {
-    const parsed = parseUrlState('?debug=calib&kiosk=1');
+  it('應正確解析 ?debug=calib、?layer=none 與舊參數相容 ?rv=1', () => {
+    const parsed = parseUrlState('?debug=calib&kiosk=1&layer=none');
     expect(parsed.debugCalib).toBe(true);
     expect(parsed.kioskMode).toBe(true);
+    expect(parsed.activeLayer).toBeNull();
+    expect(parseUrlState('?rv=1').activeLayer).toBe('rainViewer');
   });
 });
 

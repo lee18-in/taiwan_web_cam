@@ -1,6 +1,5 @@
 import type L from 'leaflet';
 import { sampleWindAt } from '../../services/openMeteo';
-import type { WindDensity } from '../../store/useWarRoomStore';
 import type { WindGridData } from '../../types/weather';
 
 interface WindParticle {
@@ -10,23 +9,31 @@ interface WindParticle {
   maxAge: number;
 }
 
-const PARTICLE_COUNTS: Record<WindDensity, number> = {
-  low: 550,
-  medium: 1050,
-  high: 1650
-};
+const BUCKET_COLORS = [
+  'rgba(56, 189, 248, 0.72)', // 0: < 15 km/h 輕風天藍
+  'rgba(45, 212, 191, 0.80)', // 1: 15-30 km/h 中風青綠
+  'rgba(250, 204, 21, 0.85)', // 2: 30-50 km/h 強風琥珀
+  'rgba(249, 115, 22, 0.90)', // 3: 50-75 km/h 暴風橘紅
+  'rgba(232, 121, 249, 0.92)' // 4: >= 75 km/h 烈風電紫
+] as const;
 
-function windSpeedToColor(speedKmh: number): string {
-  if (speedKmh >= 75) return 'rgba(232, 121, 249, 0.92)'; // 烈風電紫
-  if (speedKmh >= 50) return 'rgba(249, 115, 22, 0.9)'; // 暴風橘紅
-  if (speedKmh >= 30) return 'rgba(250, 204, 21, 0.85)'; // 強風琥珀
-  if (speedKmh >= 15) return 'rgba(45, 212, 191, 0.8)'; // 中風青綠
-  return 'rgba(56, 189, 248, 0.72)'; // 輕風天藍
+const GRID_COLS = 36;
+const GRID_ROWS = 28;
+const FRAME_INTERVAL_MS = 33; // 鎖定 ~30fps，視覺絲滑且較 60fps 省一半 CPU
+
+function speedToBucket(speedKmh: number): number {
+  if (speedKmh >= 75) return 4;
+  if (speedKmh >= 50) return 3;
+  if (speedKmh >= 30) return 2;
+  if (speedKmh >= 15) return 1;
+  return 0;
 }
 
 /**
- * Windy 風格 Canvas 2D 動態風場粒子流線控制器：
- * 使用 destination-in 柔和拖尾、依風速分色，於地圖拖曳/縮放期間自動暫停清除，效能極輕量。
+ * 極致省 CPU 版 Windy 動態風場流線引擎：
+ * 1. 僅於 moveend/zoomend/resize 時建置一次 36×28 螢幕空間風速查表，動畫迴圈中 0 次 Leaflet 投影計算
+ * 2. 所有粒子依風速歸入 5 色桶批次繪製（每幀僅 5 次 stroke，原為 1,050 次）
+ * 3. 鎖定 30fps ＋ 分頁隱藏時自動暫停（visibilitychange），大幅釋放主執行緒給 YouTube 直播
  */
 export class WindFlowController {
   private map: L.Map;
@@ -34,12 +41,21 @@ export class WindFlowController {
   private ctx: CanvasRenderingContext2D;
   private grid: WindGridData | null = null;
   private particles: WindParticle[] = [];
-  private density: WindDensity = 'medium';
   private enabled = false;
   private paused = false;
   private rafId: number | null = null;
+  private lastFrameTs = 0;
   private width = 0;
   private height = 0;
+
+  // 螢幕空間預計算速度場（TypedArrays 零 GC 分配）
+  private fieldVx = new Float32Array(GRID_COLS * GRID_ROWS);
+  private fieldVy = new Float32Array(GRID_COLS * GRID_ROWS);
+  private fieldBucket = new Int8Array(GRID_COLS * GRID_ROWS); // -1 表示超出資料範圍
+  private fieldReady = false;
+
+  // 每幀複用之 5 色桶座標緩衝
+  private bucketSegments: number[][] = [[], [], [], [], []];
 
   private readonly onMoveStart = () => {
     this.paused = true;
@@ -49,7 +65,16 @@ export class WindFlowController {
   private readonly onMoveEnd = () => {
     this.paused = false;
     this.resize();
+    this.rebuildScreenField();
     this.resetParticles();
+  };
+
+  private readonly onVisibilityChange = () => {
+    if (document.hidden) {
+      this.stopLoop();
+    } else if (this.enabled) {
+      this.startLoop();
+    }
   };
 
   constructor(map: L.Map, paneName: string) {
@@ -71,19 +96,15 @@ export class WindFlowController {
     this.resize();
     this.map.on('movestart zoomstart', this.onMoveStart);
     this.map.on('moveend zoomend resize', this.onMoveEnd);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   public setData(grid: WindGridData | null) {
     this.grid = grid;
+    this.rebuildScreenField();
     if (this.enabled && grid && this.particles.length === 0) {
       this.resetParticles();
     }
-  }
-
-  public setDensity(density: WindDensity) {
-    if (this.density === density) return;
-    this.density = density;
-    this.resetParticles();
   }
 
   public setEnabled(enabled: boolean) {
@@ -91,6 +112,7 @@ export class WindFlowController {
     this.canvas.style.display = enabled ? 'block' : 'none';
     if (enabled) {
       this.resize();
+      this.rebuildScreenField();
       this.resetParticles();
       this.startLoop();
     } else {
@@ -103,6 +125,7 @@ export class WindFlowController {
     this.stopLoop();
     this.map.off('movestart zoomstart', this.onMoveStart);
     this.map.off('moveend zoomend resize', this.onMoveEnd);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.canvas.remove();
   }
 
@@ -110,18 +133,52 @@ export class WindFlowController {
     const size = this.map.getSize();
     this.width = size.x;
     this.height = size.y;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
     this.canvas.width = Math.max(1, Math.floor(this.width * dpr));
     this.canvas.height = Math.max(1, Math.floor(this.height * dpr));
     this.canvas.style.width = `${this.width}px`;
     this.canvas.style.height = `${this.height}px`;
 
-    // 將 Canvas 對齊地圖容器原點（抵銷 Leaflet mapPane 位移）
     const topLeft = this.map.containerPointToLayerPoint([0, 0]);
     this.canvas.style.transform = `translate3d(${topLeft.x}px, ${topLeft.y}px, 0)`;
 
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  /**
+   * 將經緯度風場一次投影到螢幕 36×28 格網，後續動畫幀直接 O(1) 陣列查表。
+   */
+  private rebuildScreenField() {
+    if (!this.grid || this.width <= 0 || this.height <= 0) {
+      this.fieldReady = false;
+      return;
+    }
+
+    const zoom = this.map.getZoom();
+    // 30fps 下每步移動倍率略調高（與原 60fps 流速視覺一致）
+    const speedScale = 0.42 * Math.pow(1.16, Math.max(0, zoom - 7));
+
+    for (let r = 0; r < GRID_ROWS; r++) {
+      const py = ((r + 0.5) / GRID_ROWS) * this.height;
+      for (let c = 0; c < GRID_COLS; c++) {
+        const px = ((c + 0.5) / GRID_COLS) * this.width;
+        const idx = r * GRID_COLS + c;
+        const latLng = this.map.containerPointToLatLng([px, py]);
+        const sample = sampleWindAt(this.grid, latLng.lat, latLng.lng);
+
+        if (!sample || sample.speedKmh < 0.8) {
+          this.fieldBucket[idx] = -1;
+          this.fieldVx[idx] = 0;
+          this.fieldVy[idx] = 0;
+        } else {
+          this.fieldVx[idx] = sample.u * speedScale;
+          this.fieldVy[idx] = -sample.v * speedScale;
+          this.fieldBucket[idx] = speedToBucket(sample.speedKmh);
+        }
+      }
+    }
+    this.fieldReady = true;
   }
 
   private clear() {
@@ -132,22 +189,24 @@ export class WindFlowController {
     return {
       x: Math.random() * this.width,
       y: Math.random() * this.height,
-      age: Math.floor(Math.random() * 60),
-      maxAge: 55 + Math.floor(Math.random() * 55)
+      age: Math.floor(Math.random() * 35),
+      maxAge: 36 + Math.floor(Math.random() * 34)
     };
   }
 
   private resetParticles() {
-    const count = PARTICLE_COUNTS[this.density];
+    const count = this.width <= 768 ? 360 : 680;
     this.particles = Array.from({ length: count }, () => this.spawnParticle());
     this.clear();
   }
 
   private startLoop() {
-    if (this.rafId !== null) return;
-    const step = () => {
+    if (this.rafId !== null || document.hidden) return;
+    const step = (ts: number) => {
       this.rafId = window.requestAnimationFrame(step);
-      if (!this.enabled || this.paused || !this.grid || this.width <= 0 || this.height <= 0) {
+      if (ts - this.lastFrameTs < FRAME_INTERVAL_MS) return;
+      this.lastFrameTs = ts;
+      if (!this.enabled || this.paused || !this.fieldReady || this.width <= 0 || this.height <= 0) {
         return;
       }
       this.renderFrame();
@@ -163,47 +222,59 @@ export class WindFlowController {
   }
 
   private renderFrame() {
-    const { ctx, grid } = this;
-    if (!grid) return;
+    const { ctx, width, height, fieldVx, fieldVy, fieldBucket, bucketSegments } = this;
 
-    // 使用 destination-in 淡出既有流線尾跡，不會把底圖染黑
+    // 淡出既有流線尾跡，保留底圖透明
     ctx.globalCompositeOperation = 'destination-in';
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.92)';
-    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.89)';
+    ctx.fillRect(0, 0, width, height);
     ctx.globalCompositeOperation = 'source-over';
 
-    const zoom = this.map.getZoom();
-    // 隨縮放調整視覺流速，台灣全島視角 (z=8) 時手感最流暢
-    const speedScale = 0.22 * Math.pow(1.16, Math.max(0, zoom - 7));
-    ctx.lineWidth = zoom >= 9 ? 1.55 : 1.25;
-    ctx.lineCap = 'round';
+    for (let b = 0; b < 5; b++) bucketSegments[b].length = 0;
+
+    const invW = GRID_COLS / width;
+    const invH = GRID_ROWS / height;
 
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
-      if (p.age >= p.maxAge || p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height) {
+      if (p.age >= p.maxAge || p.x < 0 || p.x >= width || p.y < 0 || p.y >= height) {
         this.particles[i] = this.spawnParticle();
         continue;
       }
 
-      const latLng = this.map.containerPointToLatLng([p.x, p.y]);
-      const sample = sampleWindAt(grid, latLng.lat, latLng.lng);
-      if (!sample || sample.speedKmh < 0.8) {
+      const c = Math.min(GRID_COLS - 1, Math.max(0, (p.x * invW) | 0));
+      const r = Math.min(GRID_ROWS - 1, Math.max(0, (p.y * invH) | 0));
+      const idx = r * GRID_COLS + c;
+      const bucket = fieldBucket[idx];
+
+      if (bucket < 0) {
         this.particles[i] = this.spawnParticle();
         continue;
       }
 
-      const nextX = p.x + sample.u * speedScale;
-      const nextY = p.y - sample.v * speedScale; // 螢幕 Y 軸向下，北向 v 為負
+      const nx = p.x + fieldVx[idx];
+      const ny = p.y + fieldVy[idx];
+      bucketSegments[bucket].push(p.x, p.y, nx, ny);
 
-      ctx.beginPath();
-      ctx.strokeStyle = windSpeedToColor(sample.speedKmh);
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(nextX, nextY);
-      ctx.stroke();
-
-      p.x = nextX;
-      p.y = nextY;
+      p.x = nx;
+      p.y = ny;
       p.age += 1;
+    }
+
+    ctx.lineWidth = this.map.getZoom() >= 9 ? 1.5 : 1.25;
+    ctx.lineCap = 'round';
+
+    // 僅 5 次批次描邊（取代原每幀上千次獨立 stroke）
+    for (let b = 0; b < 5; b++) {
+      const segs = bucketSegments[b];
+      if (segs.length === 0) continue;
+      ctx.beginPath();
+      ctx.strokeStyle = BUCKET_COLORS[b];
+      for (let j = 0; j < segs.length; j += 4) {
+        ctx.moveTo(segs[j], segs[j + 1]);
+        ctx.lineTo(segs[j + 2], segs[j + 3]);
+      }
+      ctx.stroke();
     }
   }
 }

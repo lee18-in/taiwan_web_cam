@@ -5,9 +5,9 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-20 12:13 / 當時階段: build
+- 最後更新: 2026-11-20 13:57 / 當時階段: build
 - 交接基準 commit: 0ee8a5a [plan] 補建 COMPONENT_MAP 並完成路線 A 炫砲戰情室大改版規劃
-- 進行中任務: v2 路線 A「GitHub Free 炫砲戰情室」Phase 1–4 全量建置與視覺驗收完成（等待審閱與使用者決定是否推送部署）
+- 進行中任務: v2 極簡單選氣象切換列與低 CPU 風場效能優化已建置並推送上線，待使用者實測回饋與審閱結案
 - 阻塞點: 無
 
 > 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
@@ -16,16 +16,21 @@
 
 ## B. 路線 A 大改版規劃（〈已定案〉 — v2 建置完成）
 
-- **定案授權**：使用者於 `2026-11-20 11:52` 親自簽結 `0ee8a5a`，核准納入「3 張免費底圖切換＋6 層戰情三明治＋保留舊版 `public/legacy.html`」，並授權標記〈已定案〉切換 `[build]` 開工。
+- **定案授權**：使用者於 `2026-11-20 11:52` 親自簽結 `0ee8a5a` 並切 `[build]`；於 `2026-11-20 13:51` 明示豁免中途審閱並拍板 UX 簡化為「氣象圖層嚴格單選互斥（點啥顯示啥、其他全關）＋動態風場獨立開關＋底圖一鍵循環」。
 - **里程碑完成進度**：
-  - [x] **Phase 1**：Vite 6 + React 19 + TS + Tailwind v4 + Zustand 初始化；56 支鏡頭完整遷移 `src/data/webcams.json`（與 `public/legacy.html` 100% 吻合）；`src/core/` 純演算法＋Vitest 12 項單元測試通過；升級 `.github/workflows/static.yml`。
-  - [x] **Phase 2**：6 層戰情三明治 Leaflet 地圖（實圖驗收改採零浮水印 Esri Dark/Imagery＋國土測繪中心 NLSC EMAP/EMAP2 繁中置頂地名）；RainViewer 2 小時動態雨帶時間軸＋CWA 8 圖層多疊加／發光濾色／10 分鐘雙緩衝刷新；Open-Meteo 動態風場粒子流線；單一扁平 Keyed 零重載影片牆；45° 脈衝雷射線＋聲納鎖定環；YouTube Iframe API `onError` 遞補。
-  - [x] **Phase 3**：頂部 Tactical HUD（台北時鐘、搜尋、颱風情境快捷、4/6/8 格與省電切換、釘選 Pin、劇院大畫面、即時風雨遙測角標、Kiosk 壁掛模式、URL 分享、舊版連結）；手機版三段式 Bottom Sheet。
-  - [x] **Phase 4**：Lazy-load `?debug=calib` 校正抽屜、`scripts/check-webcams.mjs` 與 `.github/workflows/webcam-health.yml` 每日巡檢、無頭 Chrome 桌機與行動端視覺實測驗證、`README.md` 與 `COMPONENT_MAP.md` 同步更新。
+  - [x] **Phase 1–4**：Vite 6 + React 19 + TS + Tailwind v4 + Zustand + Leaflet 6 層三明治全量落地，舊版原樣保存於 `public/legacy.html`。
+  - [x] **UX 簡化與風場大瘦身**：移除 `WeatherDrawer` 多層疊加與手動透明度滑桿，改為底部 `WeatherQuickBar` 一鍵單選列；`WindFlowCanvas` 改採 36×28 螢幕空間預計算網格＋5 色桶批次描邊＋30fps＋分頁隱藏暫停。
 
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-20 13:57 [build] 使用工具: Antigravity
+
+- 完成了什麼: 使用者於 `2026-11-20 13:51` 明示豁免前筆 `236b466` 中途審閱並指示改極簡單選與推送供自測。已移除 `WeatherDrawer` 與手動透明度/濾色操作，改以底部 `WeatherQuickBar` 嚴格單選氣象圖＋獨立風場開關＋底圖一鍵循環；同步重構 `WindFlowCanvas` 為 36×28 螢幕查表＋5 桶批次描邊＋30fps 降 CPU（細節見 `COMPONENT_MAP.md`）。
+- 驗證方式: `npm test` 12/12 全過；`npm run build`（`tsc` + Vite 606ms）零錯誤；Chrome 1440×900 與 520×844 實機截圖確認底部單選列、雨帶時間軸與行動端排版無遮擋；推送後經 GitHub Actions 部署驗證。
+- 下一個 agent 該做什麼: 本次改動需要審閱：批次核對 `0ee8a5a..HEAD` v2 完整重構、單選狀態機與 `WindFlowCanvas` 查表優化。等待 `new session`／新工具審閱或使用者實測後結案。
+- 地雷警告: 本機 Node 在 `/opt/homebrew/bin`；CartoDB 免費圖磚有浮水印禁切回。
 
 ### 2026-11-20 12:13 [build] 使用工具: Antigravity
 

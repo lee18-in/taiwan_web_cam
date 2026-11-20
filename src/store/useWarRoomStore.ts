@@ -3,24 +3,20 @@ import { persist } from 'zustand/middleware';
 import type { GeoBounds } from '../core/cameraSelector';
 import { parseUrlState } from '../core/urlSync';
 import {
-  createInitialOverlays,
+  BASEMAP_ORDER,
   DEFAULT_CALIBRATION_BOUNDS,
   TAIWAN_DEFAULT_CENTER,
-  TAIWAN_DEFAULT_ZOOM,
-  WAR_ROOM_COMBOS
+  TAIWAN_DEFAULT_ZOOM
 } from '../data/mapLayers';
 import type { CameraWeatherTelemetry, PresetFilter } from '../types/webcam';
 import type {
+  ActiveWeatherLayerId,
   BasemapId,
-  BlendMode,
   BoundsTuple,
   CalibrationGroupId,
-  OverlayRuntimeState,
-  RainViewerFrame,
-  WeatherLayerId
+  RainViewerFrame
 } from '../types/weather';
 
-export type WindDensity = 'low' | 'medium' | 'high';
 export type MobileSheetState = 'collapsed' | 'half' | 'expanded';
 
 interface WarRoomState {
@@ -30,21 +26,15 @@ interface WarRoomState {
   bounds: GeoBounds | null;
   flyToTarget: { lat: number; lng: number; zoom: number; nonce: number } | null;
   basemap: BasemapId;
-  labelsOnTop: boolean;
 
-  // 氣象疊圖與動態層
-  overlays: Record<WeatherLayerId, OverlayRuntimeState>;
+  // 嚴格單選氣象圖層（點誰開誰、其他全關；再點一次自己就全關）+ 獨立風場開關
+  activeLayer: ActiveWeatherLayerId;
   windEnabled: boolean;
-  windDensity: WindDensity;
-  rainViewerEnabled: boolean;
   rainViewerPlaying: boolean;
-  rainViewerOpacity: number;
   rainViewerHost: string;
   rainViewerFrames: RainViewerFrame[];
   rainViewerFrameIndex: number;
   weatherRefreshNonce: number;
-  lastWeatherRefreshAt: number;
-  autoRefreshEnabled: boolean;
 
   // 影片牆與篩選
   maxTiles: 4 | 6 | 8;
@@ -61,7 +51,6 @@ interface WarRoomState {
   // UI 控制與開發校正
   kioskMode: boolean;
   wallsCollapsed: boolean;
-  weatherDrawerOpen: boolean;
   calibrationOpen: boolean;
   customBounds: Partial<Record<CalibrationGroupId, BoundsTuple>>;
   mobileSheetState: MobileSheetState;
@@ -70,20 +59,15 @@ interface WarRoomState {
   setViewport: (center: [number, number], zoom: number, bounds: GeoBounds) => void;
   requestFlyTo: (lat: number, lng: number, zoom?: number) => void;
   setBasemap: (basemap: BasemapId) => void;
-  setLabelsOnTop: (on: boolean) => void;
-  toggleOverlay: (id: WeatherLayerId) => void;
-  setOverlayOpacity: (id: WeatherLayerId, opacity: number) => void;
-  setOverlayBlendMode: (id: WeatherLayerId, mode: BlendMode) => void;
+  cycleBasemap: () => void;
+  /** 嚴格單選：點已啟用的圖層則關閉（null），點新圖層則立刻取代其他全部氣象圖 */
+  selectLayer: (layer: Exclude<ActiveWeatherLayerId, null>) => void;
+  clearLayer: () => void;
   setWindEnabled: (on: boolean) => void;
-  setWindDensity: (density: WindDensity) => void;
-  setRainViewerEnabled: (on: boolean) => void;
   setRainViewerPlaying: (playing: boolean) => void;
-  setRainViewerOpacity: (opacity: number) => void;
   setRainViewerData: (host: string, frames: RainViewerFrame[]) => void;
   setRainViewerFrameIndex: (index: number) => void;
   triggerWeatherRefresh: () => void;
-  setAutoRefreshEnabled: (on: boolean) => void;
-  applyComboPreset: (presetId: string) => void;
 
   setMaxTiles: (count: 4 | 6 | 8) => void;
   setFullLiveMode: (on: boolean) => void;
@@ -99,7 +83,6 @@ interface WarRoomState {
 
   setKioskMode: (on: boolean) => void;
   setWallsCollapsed: (on: boolean) => void;
-  setWeatherDrawerOpen: (open: boolean) => void;
   setCalibrationOpen: (open: boolean) => void;
   setCustomBounds: (group: CalibrationGroupId, bounds: BoundsTuple) => void;
   resetCustomBounds: (group: CalibrationGroupId) => void;
@@ -109,26 +92,20 @@ interface WarRoomState {
 
 export const useWarRoomStore = create<WarRoomState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       center: TAIWAN_DEFAULT_CENTER,
       zoom: TAIWAN_DEFAULT_ZOOM,
       bounds: null,
       flyToTarget: null,
       basemap: 'dark',
-      labelsOnTop: true,
 
-      overlays: createInitialOverlays(),
+      activeLayer: 'rainViewer',
       windEnabled: true,
-      windDensity: 'medium',
-      rainViewerEnabled: true,
       rainViewerPlaying: true,
-      rainViewerOpacity: 0.72,
       rainViewerHost: 'https://tilecache.rainviewer.com',
       rainViewerFrames: [],
       rainViewerFrameIndex: 0,
       weatherRefreshNonce: Date.now(),
-      lastWeatherRefreshAt: Date.now(),
-      autoRefreshEnabled: true,
 
       maxTiles: 4,
       fullLiveMode: false,
@@ -143,7 +120,6 @@ export const useWarRoomStore = create<WarRoomState>()(
 
       kioskMode: false,
       wallsCollapsed: false,
-      weatherDrawerOpen: false,
       calibrationOpen: false,
       customBounds: {},
       mobileSheetState: 'collapsed',
@@ -159,43 +135,19 @@ export const useWarRoomStore = create<WarRoomState>()(
           }
         })),
       setBasemap: (basemap) => set({ basemap }),
-      setLabelsOnTop: (labelsOnTop) => set({ labelsOnTop }),
-      toggleOverlay: (id) =>
+      cycleBasemap: () =>
+        set((s) => {
+          const idx = BASEMAP_ORDER.indexOf(s.basemap);
+          const next = BASEMAP_ORDER[(idx + 1) % BASEMAP_ORDER.length];
+          return { basemap: next };
+        }),
+      selectLayer: (layer) =>
         set((s) => ({
-          overlays: {
-            ...s.overlays,
-            [id]: { ...s.overlays[id], enabled: !s.overlays[id].enabled }
-          }
+          activeLayer: s.activeLayer === layer ? null : layer
         })),
-      setOverlayOpacity: (id, opacity) =>
-        set((s) => ({
-          overlays: {
-            ...s.overlays,
-            [id]: { ...s.overlays[id], opacity }
-          }
-        })),
-      setOverlayBlendMode: (id, blendMode) =>
-        set((s) => ({
-          overlays: {
-            ...s.overlays,
-            [id]: { ...s.overlays[id], blendMode }
-          }
-        })),
+      clearLayer: () => set({ activeLayer: null }),
       setWindEnabled: (windEnabled) => set({ windEnabled }),
-      setWindDensity: (windDensity) => set({ windDensity }),
-      setRainViewerEnabled: (rainViewerEnabled) =>
-        set((s) => ({
-          rainViewerEnabled,
-          // 開啟 RainViewer 動畫時，自動先關閉靜態 CWA 雷達避免兩個雷達重疊打架
-          overlays: rainViewerEnabled
-            ? {
-                ...s.overlays,
-                radar: { ...s.overlays.radar, enabled: false }
-              }
-            : s.overlays
-        })),
       setRainViewerPlaying: (rainViewerPlaying) => set({ rainViewerPlaying }),
-      setRainViewerOpacity: (rainViewerOpacity) => set({ rainViewerOpacity }),
       setRainViewerData: (rainViewerHost, rainViewerFrames) =>
         set({
           rainViewerHost,
@@ -203,36 +155,7 @@ export const useWarRoomStore = create<WarRoomState>()(
           rainViewerFrameIndex: Math.max(0, rainViewerFrames.length - 1)
         }),
       setRainViewerFrameIndex: (rainViewerFrameIndex) => set({ rainViewerFrameIndex }),
-      triggerWeatherRefresh: () => {
-        const now = Date.now();
-        set({ weatherRefreshNonce: now, lastWeatherRefreshAt: now });
-      },
-      setAutoRefreshEnabled: (autoRefreshEnabled) => set({ autoRefreshEnabled }),
-      applyComboPreset: (presetId) => {
-        const preset = WAR_ROOM_COMBOS.find((p) => p.id === presetId);
-        if (!preset) return;
-        const nextOverlays = createInitialOverlays();
-        // 先全部關閉，再套用預設開啟者
-        (Object.keys(nextOverlays) as WeatherLayerId[]).forEach((k) => {
-          nextOverlays[k].enabled = false;
-        });
-        (Object.keys(preset.overlays) as WeatherLayerId[]).forEach((k) => {
-          const cfg = preset.overlays[k];
-          if (!cfg) return;
-          nextOverlays[k] = {
-            enabled: cfg.enabled,
-            opacity: cfg.opacity,
-            blendMode: cfg.blendMode ?? nextOverlays[k].blendMode
-          };
-        });
-        set({
-          basemap: preset.basemap,
-          labelsOnTop: preset.labelsOnTop,
-          windEnabled: preset.windEnabled,
-          rainViewerEnabled: preset.rainViewerEnabled,
-          overlays: nextOverlays
-        });
-      },
+      triggerWeatherRefresh: () => set({ weatherRefreshNonce: Date.now() }),
 
       setMaxTiles: (maxTiles) => set({ maxTiles }),
       setFullLiveMode: (fullLiveMode) => set({ fullLiveMode }),
@@ -241,13 +164,8 @@ export const useWarRoomStore = create<WarRoomState>()(
       togglePin: (camId) =>
         set((s) => {
           const exists = s.pinnedIds.includes(camId);
-          if (exists) {
-            return { pinnedIds: s.pinnedIds.filter((id) => id !== camId) };
-          }
-          if (s.pinnedIds.length >= 4) {
-            // 上限 4 支：擠掉最早釘選的那支
-            return { pinnedIds: [...s.pinnedIds.slice(1), camId] };
-          }
+          if (exists) return { pinnedIds: s.pinnedIds.filter((id) => id !== camId) };
+          if (s.pinnedIds.length >= 4) return { pinnedIds: [...s.pinnedIds.slice(1), camId] };
           return { pinnedIds: [...s.pinnedIds, camId] };
         }),
       setFocusedCamId: (focusedCamId) => set({ focusedCamId }),
@@ -257,10 +175,9 @@ export const useWarRoomStore = create<WarRoomState>()(
           s.offlineIds.includes(camId) ? s : { offlineIds: [...s.offlineIds, camId] }
         ),
       markManyOffline: (camIds) =>
-        set((s) => {
-          const merged = Array.from(new Set([...s.offlineIds, ...camIds]));
-          return { offlineIds: merged };
-        }),
+        set((s) => ({
+          offlineIds: Array.from(new Set([...s.offlineIds, ...camIds]))
+        })),
       activateFacade: (camId) =>
         set((s) =>
           s.activatedFacadeIds.includes(camId)
@@ -272,13 +189,8 @@ export const useWarRoomStore = create<WarRoomState>()(
           telemetryById: { ...s.telemetryById, ...entries }
         })),
 
-      setKioskMode: (kioskMode) =>
-        set({
-          kioskMode,
-          weatherDrawerOpen: kioskMode ? false : get().weatherDrawerOpen
-        }),
+      setKioskMode: (kioskMode) => set({ kioskMode }),
       setWallsCollapsed: (wallsCollapsed) => set({ wallsCollapsed }),
-      setWeatherDrawerOpen: (weatherDrawerOpen) => set({ weatherDrawerOpen }),
       setCalibrationOpen: (calibrationOpen) => set({ calibrationOpen }),
       setCustomBounds: (group, bounds) =>
         set((s) => ({
@@ -296,57 +208,32 @@ export const useWarRoomStore = create<WarRoomState>()(
       hydrateFromUrl: (search) => {
         const parsed = parseUrlState(search);
         if (Object.keys(parsed).length === 0) return;
-        set((s) => {
-          const nextOverlays = { ...s.overlays };
-          if (parsed.enabledLayers) {
-            const enabledSet = new Set(parsed.enabledLayers);
-            (Object.keys(nextOverlays) as WeatherLayerId[]).forEach((k) => {
-              nextOverlays[k] = { ...nextOverlays[k], enabled: enabledSet.has(k) };
-            });
-          }
-          const nextRainViewer =
-            parsed.rainViewerEnabled !== undefined
-              ? parsed.rainViewerEnabled
-              : parsed.enabledLayers && parsed.enabledLayers.includes('radar')
-              ? false
-              : s.rainViewerEnabled;
-
-          if (parsed.rainViewerEnabled === true && !parsed.enabledLayers) {
-            nextOverlays.radar = { ...nextOverlays.radar, enabled: false };
-          }
-
-          return {
-            center:
-              parsed.lat !== undefined && parsed.lng !== undefined
-                ? [parsed.lat, parsed.lng]
-                : s.center,
-            zoom: parsed.zoom ?? s.zoom,
-            basemap: parsed.basemap ?? s.basemap,
-            labelsOnTop: parsed.labelsOnTop ?? s.labelsOnTop,
-            overlays: nextOverlays,
-            pinnedIds: parsed.pinnedIds ?? s.pinnedIds,
-            presetFilter: parsed.presetFilter ?? s.presetFilter,
-            windEnabled: parsed.windEnabled ?? s.windEnabled,
-            rainViewerEnabled: nextRainViewer,
-            maxTiles: parsed.maxTiles ?? s.maxTiles,
-            kioskMode: parsed.kioskMode ?? s.kioskMode,
-            calibrationOpen: parsed.debugCalib ?? s.calibrationOpen
-          };
-        });
+        set((s) => ({
+          center:
+            parsed.lat !== undefined && parsed.lng !== undefined
+              ? [parsed.lat, parsed.lng]
+              : s.center,
+          zoom: parsed.zoom ?? s.zoom,
+          basemap: parsed.basemap ?? s.basemap,
+          activeLayer: parsed.activeLayer !== undefined ? parsed.activeLayer : s.activeLayer,
+          pinnedIds: parsed.pinnedIds ?? s.pinnedIds,
+          presetFilter: parsed.presetFilter ?? s.presetFilter,
+          windEnabled: parsed.windEnabled ?? s.windEnabled,
+          maxTiles: parsed.maxTiles ?? s.maxTiles,
+          kioskMode: parsed.kioskMode ?? s.kioskMode,
+          calibrationOpen: parsed.debugCalib ?? s.calibrationOpen
+        }));
       }
     }),
     {
-      name: 'tw-war-room-v2-prefs',
+      name: 'tw-war-room-v2-simple-prefs',
       partialize: (state) => ({
         basemap: state.basemap,
-        labelsOnTop: state.labelsOnTop,
-        overlays: state.overlays,
+        activeLayer: state.activeLayer,
         windEnabled: state.windEnabled,
-        windDensity: state.windDensity,
         maxTiles: state.maxTiles,
         fullLiveMode: state.fullLiveMode,
         pinnedIds: state.pinnedIds,
-        autoRefreshEnabled: state.autoRefreshEnabled,
         customBounds: state.customBounds
       })
     }

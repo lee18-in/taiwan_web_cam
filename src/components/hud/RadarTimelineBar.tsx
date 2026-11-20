@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Pause, Play, X } from 'lucide-react';
+import { Pause, Play } from 'lucide-react';
 import { formatTaipeiFrameTime } from '../../services/rainViewer';
 import { useWarRoomStore } from '../../store/useWarRoomStore';
 
@@ -7,14 +7,19 @@ interface RadarTimelineBarProps {
   isMobile: boolean;
 }
 
+/**
+ * 極簡 2 小時動態雨帶時間軸（僅於「動態雨帶」啟用時浮現於底部切換列正上方）
+ */
 export function RadarTimelineBar({ isMobile }: RadarTimelineBarProps) {
-  const enabled = useWarRoomStore((s) => s.rainViewerEnabled);
+  const activeLayer = useWarRoomStore((s) => s.activeLayer);
   const playing = useWarRoomStore((s) => s.rainViewerPlaying);
   const frames = useWarRoomStore((s) => s.rainViewerFrames);
   const frameIndex = useWarRoomStore((s) => s.rainViewerFrameIndex);
+  const kioskMode = useWarRoomStore((s) => s.kioskMode);
   const setPlaying = useWarRoomStore((s) => s.setRainViewerPlaying);
   const setFrameIndex = useWarRoomStore((s) => s.setRainViewerFrameIndex);
-  const setEnabled = useWarRoomStore((s) => s.setRainViewerEnabled);
+
+  const enabled = activeLayer === 'rainViewer';
 
   useEffect(() => {
     if (!enabled || !playing || frames.length <= 1) return;
@@ -31,47 +36,38 @@ export function RadarTimelineBar({ isMobile }: RadarTimelineBarProps) {
 
   return (
     <div
-      className={`hud-glass fixed left-1/2 z-[760] flex -translate-x-1/2 items-center gap-3 rounded-2xl px-3.5 py-2 ${
-        isMobile ? 'bottom-20 w-[calc(100vw-24px)] max-w-md' : 'bottom-4 w-[360px]'
+      className={`hud-glass fixed left-1/2 z-[760] flex -translate-x-1/2 items-center gap-2.5 rounded-full px-3 py-1.5 ${
+        kioskMode
+          ? 'bottom-4 w-[300px]'
+          : isMobile
+          ? 'bottom-[132px] w-[calc(100vw-32px)] max-w-sm'
+          : 'bottom-[68px] w-[320px]'
       }`}
     >
       <button
         type="button"
         onClick={() => setPlaying(!playing)}
-        aria-label={playing ? '暫停雷達動畫' : '播放雷達動畫'}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-500/25 text-sky-200 ring-1 ring-sky-400/50 hover:bg-sky-500/35 cursor-pointer"
+        aria-label={playing ? '暫停雨帶動畫' : '播放雨帶動畫'}
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-500/25 text-sky-200 ring-1 ring-sky-400/50 hover:bg-sky-500/35 cursor-pointer"
       >
-        {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
+        {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-0.5" />}
       </button>
 
-      <div className="flex flex-1 flex-col gap-1">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="font-medium text-sky-200">2 小時動態雨帶</span>
-          <span className="font-mono-tech font-semibold text-white">
-            {formatTaipeiFrameTime(activeFrame.time)} TPE
-          </span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={Math.max(0, frames.length - 1)}
-          value={frameIndex}
-          onChange={(e) => {
-            setPlaying(false);
-            setFrameIndex(Number(e.target.value));
-          }}
-          className="h-1.5 w-full accent-sky-400 cursor-pointer"
-        />
-      </div>
+      <input
+        type="range"
+        min={0}
+        max={Math.max(0, frames.length - 1)}
+        value={frameIndex}
+        onChange={(e) => {
+          setPlaying(false);
+          setFrameIndex(Number(e.target.value));
+        }}
+        className="h-1 flex-1 accent-sky-400 cursor-pointer"
+      />
 
-      <button
-        type="button"
-        onClick={() => setEnabled(false)}
-        aria-label="關閉動態雷達"
-        className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+      <span className="shrink-0 font-mono-tech text-[11px] font-semibold text-sky-200">
+        {formatTaipeiFrameTime(activeFrame.time)}
+      </span>
     </div>
   );
 }

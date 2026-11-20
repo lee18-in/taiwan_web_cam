@@ -4,7 +4,6 @@ import {
   Eye,
   EyeOff,
   History,
-  Layers,
   Monitor,
   Pin,
   Radio,
@@ -16,7 +15,6 @@ import {
 import { buildShareUrl } from '../../core/urlSync';
 import { useWarRoomStore } from '../../store/useWarRoomStore';
 import type { PresetFilter, Webcam } from '../../types/webcam';
-import type { WeatherLayerId } from '../../types/weather';
 
 interface TopHudBarProps {
   webcams: Webcam[];
@@ -59,10 +57,8 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
   const center = useWarRoomStore((s) => s.center);
   const zoom = useWarRoomStore((s) => s.zoom);
   const basemap = useWarRoomStore((s) => s.basemap);
-  const labelsOnTop = useWarRoomStore((s) => s.labelsOnTop);
-  const overlays = useWarRoomStore((s) => s.overlays);
+  const activeLayer = useWarRoomStore((s) => s.activeLayer);
   const windEnabled = useWarRoomStore((s) => s.windEnabled);
-  const rainViewerEnabled = useWarRoomStore((s) => s.rainViewerEnabled);
   const maxTiles = useWarRoomStore((s) => s.maxTiles);
   const fullLiveMode = useWarRoomStore((s) => s.fullLiveMode);
   const presetFilter = useWarRoomStore((s) => s.presetFilter);
@@ -70,7 +66,6 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
   const pinnedIds = useWarRoomStore((s) => s.pinnedIds);
   const kioskMode = useWarRoomStore((s) => s.kioskMode);
   const wallsCollapsed = useWarRoomStore((s) => s.wallsCollapsed);
-  const weatherDrawerOpen = useWarRoomStore((s) => s.weatherDrawerOpen);
 
   const setMaxTiles = useWarRoomStore((s) => s.setMaxTiles);
   const setFullLiveMode = useWarRoomStore((s) => s.setFullLiveMode);
@@ -78,11 +73,9 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
   const setSearchQuery = useWarRoomStore((s) => s.setSearchQuery);
   const setKioskMode = useWarRoomStore((s) => s.setKioskMode);
   const setWallsCollapsed = useWarRoomStore((s) => s.setWallsCollapsed);
-  const setWeatherDrawerOpen = useWarRoomStore((s) => s.setWeatherDrawerOpen);
   const requestFlyTo = useWarRoomStore((s) => s.requestFlyTo);
   const setFocusedCamId = useWarRoomStore((s) => s.setFocusedCamId);
 
-  // ESC 退出 Kiosk 壁掛模式
   useEffect(() => {
     if (!kioskMode) return;
     const onKey = (e: KeyboardEvent) => {
@@ -110,26 +103,16 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
       .slice(0, 8);
   }, [webcams, searchQuery]);
 
-  const activeWeatherCount =
-    (Object.keys(overlays) as WeatherLayerId[]).filter((k) => overlays[k].enabled).length +
-    (windEnabled ? 1 : 0) +
-    (rainViewerEnabled ? 1 : 0);
-
   const handleShare = async () => {
-    const enabledLayers = (Object.keys(overlays) as WeatherLayerId[]).filter(
-      (k) => overlays[k].enabled
-    );
     const shareUrl = buildShareUrl(window.location.href, {
       lat: center[0],
       lng: center[1],
       zoom,
       basemap,
-      labelsOnTop,
-      enabledLayers,
+      activeLayer,
       pinnedIds,
       presetFilter,
       windEnabled,
-      rainViewerEnabled,
       maxTiles,
       kioskMode
     });
@@ -142,7 +125,6 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
     }
   };
 
-  // Kiosk 純享壁掛模式：只留右上極簡懸浮提示，整個螢幕全留給動態風場、雷達與直播牆
   if (kioskMode) {
     return (
       <div className="fixed top-3 left-1/2 z-[900] -translate-x-1/2 flex items-center gap-3 rounded-full border border-cyan-400/30 bg-slate-950/70 px-4 py-1.5 backdrop-blur-md opacity-35 transition hover:opacity-100">
@@ -281,7 +263,7 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
               <Search className="h-3.5 w-3.5" />
             </button>
           )}
-          {/* 桌機版格數切換 (4 / 6 / 8) 與節能模式 */}
+
           {!isMobile && (
             <>
               <div
@@ -327,14 +309,18 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
               <button
                 type="button"
                 onClick={() => setWallsCollapsed(!wallsCollapsed)}
-                title={wallsCollapsed ? '展開影片牆' : '收合影片牆（專心看大型氣象地圖）'}
+                title={wallsCollapsed ? '展開影片牆' : '收合影片牆（專心看大型地圖）'}
                 className={`rounded-lg border p-1.5 transition cursor-pointer ${
                   wallsCollapsed
                     ? 'border-cyan-400/50 bg-cyan-500/20 text-cyan-200'
                     : 'border-slate-700/70 bg-slate-900/70 text-slate-300 hover:text-white'
                 }`}
               >
-                {wallsCollapsed ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                {wallsCollapsed ? (
+                  <Eye className="h-3.5 w-3.5" />
+                ) : (
+                  <EyeOff className="h-3.5 w-3.5" />
+                )}
               </button>
 
               <button
@@ -348,11 +334,10 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
             </>
           )}
 
-          {/* 分享戰情視角 URL */}
           <button
             type="button"
             onClick={() => void handleShare()}
-            title="複製目前視角、圖層與釘選配置連結"
+            title="複製目前視角與配置連結"
             className="inline-flex items-center gap-1 rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-[11px] text-slate-200 transition hover:border-cyan-400/50 hover:text-cyan-200 cursor-pointer"
           >
             {copied ? (
@@ -368,24 +353,6 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
             )}
           </button>
 
-          {/* 氣象與底圖控制台開關 */}
-          <button
-            type="button"
-            onClick={() => setWeatherDrawerOpen(!weatherDrawerOpen)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition cursor-pointer ${
-              weatherDrawerOpen
-                ? 'border-cyan-400/70 bg-cyan-500/25 text-cyan-100'
-                : 'border-sky-400/35 bg-sky-500/15 text-sky-200 hover:bg-sky-500/25'
-            }`}
-          >
-            <Layers className="h-3.5 w-3.5" />
-            <span>圖層</span>
-            <span className="rounded-full bg-cyan-400/25 px-1.5 font-mono-tech text-[10px] text-cyan-200">
-              {activeWeatherCount}
-            </span>
-          </button>
-
-          {/* 釘選狀態快速指示（僅手機或窄螢幕顯示） */}
           {isMobile && pinnedIds.length > 0 && (
             <button
               type="button"
@@ -401,21 +368,23 @@ export function TopHudBar({ webcams, isMobile, activeCount }: TopHudBarProps) {
             </button>
           )}
 
-          {/* 保留舊版直達連結 */}
           <a
             href={legacyHref}
             title="切換檢視原始單檔舊版 (Classic v1)"
-            className="hidden items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-900/60 px-2 py-1.5 text-[11px] text-slate-400 transition hover:border-slate-500 hover:text-slate-200 md:inline-flex"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-900/60 px-2 py-1.5 text-[11px] text-slate-400 transition hover:border-slate-500 hover:text-slate-200"
           >
             <History className="h-3.5 w-3.5" />
-            <span>舊版</span>
+            <span className="hidden sm:inline">舊版</span>
           </a>
         </div>
       </div>
 
       {/* 手機版展開搜尋列 */}
       {isMobile && mobileSearchOpen && (
-        <div ref={searchWrapRef} className="hud-glass-strong pointer-events-auto relative w-full rounded-xl p-2">
+        <div
+          ref={searchWrapRef}
+          className="hud-glass-strong pointer-events-auto relative w-full rounded-xl p-2"
+        >
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input

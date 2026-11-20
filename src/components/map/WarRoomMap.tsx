@@ -4,7 +4,7 @@ import {
   BASEMAPS,
   DEFAULT_CALIBRATION_BOUNDS,
   TW_LABELS_TILE_URL,
-  WEATHER_LAYER_LIST
+  WEATHER_LAYERS
 } from '../../data/mapLayers';
 import { fetchTaiwanWindGrid } from '../../services/openMeteo';
 import { buildRainViewerTileUrl, fetchRainViewerFrames } from '../../services/rainViewer';
@@ -61,24 +61,19 @@ export function WarRoomMap({
   const mapRef = useRef<L.Map | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
   const labelsLayerRef = useRef<L.TileLayer | null>(null);
-  const cwaOverlaysRef = useRef<Partial<Record<WeatherLayerId, L.ImageOverlay>>>({});
+  const activeCwaOverlayRef = useRef<{ id: WeatherLayerId; layer: L.ImageOverlay } | null>(null);
   const rainViewerLayersRef = useRef<Map<string, L.TileLayer>>(new Map());
   const windControllerRef = useRef<WindFlowController | null>(null);
 
-  // Canvas 標記池（未入選鏡頭）與高亮 DivIcon 標記池（活躍鏡頭）
   const canvasRendererRef = useRef<L.Canvas | null>(null);
   const passiveMarkersRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const activeMarkersRef = useRef<Map<string, L.Marker>>(new Map());
 
   const basemap = useWarRoomStore((s) => s.basemap);
-  const labelsOnTop = useWarRoomStore((s) => s.labelsOnTop);
-  const overlays = useWarRoomStore((s) => s.overlays);
+  const activeLayer = useWarRoomStore((s) => s.activeLayer);
   const customBounds = useWarRoomStore((s) => s.customBounds);
   const weatherRefreshNonce = useWarRoomStore((s) => s.weatherRefreshNonce);
   const windEnabled = useWarRoomStore((s) => s.windEnabled);
-  const windDensity = useWarRoomStore((s) => s.windDensity);
-  const rainViewerEnabled = useWarRoomStore((s) => s.rainViewerEnabled);
-  const rainViewerOpacity = useWarRoomStore((s) => s.rainViewerOpacity);
   const rainViewerHost = useWarRoomStore((s) => s.rainViewerHost);
   const rainViewerFrames = useWarRoomStore((s) => s.rainViewerFrames);
   const rainViewerFrameIndex = useWarRoomStore((s) => s.rainViewerFrameIndex);
@@ -91,6 +86,8 @@ export function WarRoomMap({
   const setFocusedCamId = useWarRoomStore((s) => s.setFocusedCamId);
   const setHoveredCamId = useWarRoomStore((s) => s.setHoveredCamId);
   const setRainViewerData = useWarRoomStore((s) => s.setRainViewerData);
+
+  const isRainViewerActive = activeLayer === 'rainViewer';
 
   // 1. 初始化 Leaflet 地圖與 6 層「戰情三明治」Custom Panes
   useEffect(() => {
@@ -108,7 +105,6 @@ export function WarRoomMap({
       attributionControl: true
     });
 
-    // 精準 6 層 Z-Index 分層架構
     const cloudPane = map.createPane('weather-cloud');
     cloudPane.style.zIndex = '300';
     cloudPane.style.pointerEvents = 'none';
@@ -127,8 +123,6 @@ export function WarRoomMap({
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     canvasRendererRef.current = L.canvas({ padding: 0.5 });
-
-    // 初始化 Windy 動態風場控制器
     windControllerRef.current = new WindFlowController(map, 'weather-wind');
 
     let debounceTimer: number | null = null;
@@ -144,11 +138,8 @@ export function WarRoomMap({
         });
       };
       if (debounceTimer) window.clearTimeout(debounceTimer);
-      if (immediate) {
-        run();
-      } else {
-        debounceTimer = window.setTimeout(run, 240);
-      }
+      if (immediate) run();
+      else debounceTimer = window.setTimeout(run, 240);
     };
 
     map.on('moveend zoomend', () => {
@@ -176,32 +167,30 @@ export function WarRoomMap({
       rainViewerLayersRef.current.clear();
       passiveMarkersRef.current.clear();
       activeMarkersRef.current.clear();
-      cwaOverlaysRef.current = {};
+      activeCwaOverlayRef.current = null;
       map.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. 處理飛往指定鏡頭事件
+  // 2. 飛往指定鏡頭
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !flyToTarget) return;
     map.flyTo([flyToTarget.lat, flyToTarget.lng], flyToTarget.zoom, {
-      duration: 0.9,
+      duration: 0.85,
       easeLinearity: 0.25
     });
   }, [flyToTarget]);
 
-  // 3. 底圖切換（3 種免費標準圖磚）＋ 獨立「地名文字置頂層」
+  // 3. 底圖切換（3 種免費無浮水印底圖）＋ 自動置頂台灣繁中地名
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     const cfg = BASEMAPS[basemap];
-    if (basemapLayerRef.current) {
-      map.removeLayer(basemapLayerRef.current);
-    }
+    if (basemapLayerRef.current) map.removeLayer(basemapLayerRef.current);
 
     const baseLayer = L.tileLayer(cfg.url, {
       subdomains: cfg.subdomains ?? '',
@@ -212,12 +201,11 @@ export function WarRoomMap({
     baseLayer.addTo(map);
     basemapLayerRef.current = baseLayer;
 
-    // 獨立浮動文字層（置於所有雲圖與雷達上方）
     if (labelsLayerRef.current) {
       map.removeLayer(labelsLayerRef.current);
       labelsLayerRef.current = null;
     }
-    if (cfg.supportsLabelsOnTop && labelsOnTop) {
+    if (cfg.supportsLabelsOnTop) {
       const labelLayer = L.tileLayer(TW_LABELS_TILE_URL, {
         maxZoom: 19,
         opacity: 0.78,
@@ -227,77 +215,82 @@ export function WarRoomMap({
       labelLayer.addTo(map);
       labelsLayerRef.current = labelLayer;
     }
-  }, [basemap, labelsOnTop]);
+  }, [basemap]);
 
-  // 4. 中央氣象署 8 組高解析疊圖（Lazy Load ＋ 多層疊加 ＋ 雙緩衝無感刷新 ＋ BlendMode）
+  // 4. 嚴格單選 CWA 官方疊圖（切換立刻清除舊層，自動依底圖套用最佳透明度與混色）
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     let cancelled = false;
 
-    WEATHER_LAYER_LIST.forEach((cfg) => {
-      const runtime = overlays[cfg.id];
-      const bounds = customBounds[cfg.calibrationGroup] ?? DEFAULT_CALIBRATION_BOUNDS[cfg.calibrationGroup];
-      const existing = cwaOverlaysRef.current[cfg.id];
+    const cwaId: WeatherLayerId | null =
+      activeLayer && activeLayer !== 'rainViewer' ? activeLayer : null;
 
-      if (!runtime.enabled) {
-        if (existing && map.hasLayer(existing)) {
-          map.removeLayer(existing);
-        }
-        return;
+    if (!cwaId) {
+      if (activeCwaOverlayRef.current) {
+        map.removeLayer(activeCwaOverlayRef.current.layer);
+        activeCwaOverlayRef.current = null;
       }
+      return;
+    }
 
-      const bustedUrl = withCacheBust(cfg.url, weatherRefreshNonce);
+    const cfg = WEATHER_LAYERS[cwaId];
+    const bounds =
+      customBounds[cfg.calibrationGroup] ?? DEFAULT_CALIBRATION_BOUNDS[cfg.calibrationGroup];
+    const isLightBase = basemap === 'nlsc';
+    const opacity = isLightBase ? cfg.optimalOpacityLight : cfg.optimalOpacityDark;
+    const blendMode = isLightBase ? 'normal' : cfg.blendModeDark;
+    const bustedUrl = withCacheBust(cfg.url, weatherRefreshNonce);
 
-      const applyImgStyles = (overlay: L.ImageOverlay) => {
-        const imgEl = overlay.getElement();
-        if (!imgEl) return;
-        imgEl.referrerPolicy = 'no-referrer';
-        imgEl.style.mixBlendMode = runtime.blendMode;
-        imgEl.style.transition = 'opacity 0.25s ease';
-      };
+    const applyStyles = (overlay: L.ImageOverlay) => {
+      const imgEl = overlay.getElement();
+      if (!imgEl) return;
+      imgEl.referrerPolicy = 'no-referrer';
+      imgEl.style.mixBlendMode = blendMode;
+    };
 
-      if (!existing) {
-        const overlay = L.imageOverlay(bustedUrl, bounds, {
-          opacity: runtime.opacity,
-          interactive: false,
-          pane: cfg.pane
+    // 若切換到不同 CWA 圖層，立即移除舊層
+    if (activeCwaOverlayRef.current && activeCwaOverlayRef.current.id !== cwaId) {
+      map.removeLayer(activeCwaOverlayRef.current.layer);
+      activeCwaOverlayRef.current = null;
+    }
+
+    if (!activeCwaOverlayRef.current) {
+      const overlay = L.imageOverlay(bustedUrl, bounds, {
+        opacity,
+        interactive: false,
+        pane: cfg.pane
+      });
+      overlay.on('add', () => applyStyles(overlay));
+      overlay.addTo(map);
+      applyStyles(overlay);
+      activeCwaOverlayRef.current = { id: cwaId, layer: overlay };
+    } else {
+      const overlay = activeCwaOverlayRef.current.layer;
+      overlay.setBounds(L.latLngBounds(bounds));
+      overlay.setOpacity(opacity);
+      applyStyles(overlay);
+
+      const currentUrl = (overlay as unknown as { _url?: string })._url;
+      if (currentUrl !== bustedUrl) {
+        void preloadImageNoReferrer(bustedUrl).then((ok) => {
+          if (!cancelled && ok && activeCwaOverlayRef.current?.id === cwaId) {
+            overlay.setUrl(bustedUrl);
+            applyStyles(overlay);
+          }
         });
-        overlay.on('add', () => applyImgStyles(overlay));
-        overlay.addTo(map);
-        applyImgStyles(overlay);
-        cwaOverlaysRef.current[cfg.id] = overlay;
-      } else {
-        if (!map.hasLayer(existing)) {
-          existing.addTo(map);
-        }
-        existing.setBounds(L.latLngBounds(bounds));
-        existing.setOpacity(runtime.opacity);
-        applyImgStyles(existing);
-
-        // 雙緩衝預載新圖資，避免每 10 分鐘自動刷新時閃白
-        const currentUrl = (existing as unknown as { _url?: string })._url;
-        if (currentUrl !== bustedUrl) {
-          void preloadImageNoReferrer(bustedUrl).then((ok) => {
-            if (!cancelled && ok) {
-              existing.setUrl(bustedUrl);
-              applyImgStyles(existing);
-            }
-          });
-        }
       }
-    });
+    }
 
     return () => {
       cancelled = true;
     };
-  }, [overlays, customBounds, weatherRefreshNonce]);
+  }, [activeLayer, basemap, customBounds, weatherRefreshNonce]);
 
-  // 5. Windy 動態風場流線層（Open-Meteo 單次批次網格）
+  // 5. 高效能 Windy 動態風場流線（獨立開關）
   useEffect(() => {
     const ctrl = windControllerRef.current;
     if (!ctrl) return;
-    ctrl.setDensity(windDensity);
     ctrl.setEnabled(windEnabled);
     if (!windEnabled) return;
 
@@ -310,11 +303,11 @@ export function WarRoomMap({
     return () => {
       cancelled = true;
     };
-  }, [windEnabled, windDensity, weatherRefreshNonce]);
+  }, [windEnabled, weatherRefreshNonce]);
 
-  // 6. RainViewer 2 小時動態雷達圖磚時間軸
+  // 6. RainViewer 2 小時動態雷達（僅在 activeLayer === 'rainViewer' 時啟用）
   useEffect(() => {
-    if (!rainViewerEnabled) {
+    if (!isRainViewerActive) {
       const map = mapRef.current;
       if (map) {
         rainViewerLayersRef.current.forEach((layer) => {
@@ -333,16 +326,16 @@ export function WarRoomMap({
     return () => {
       cancelled = true;
     };
-  }, [rainViewerEnabled, weatherRefreshNonce, setRainViewerData]);
+  }, [isRainViewerActive, weatherRefreshNonce, setRainViewerData]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !rainViewerEnabled || rainViewerFrames.length === 0) return;
+    if (!map || !isRainViewerActive || rainViewerFrames.length === 0) return;
 
-    const currentFrame = rainViewerFrames[rainViewerFrameIndex] ?? rainViewerFrames[rainViewerFrames.length - 1];
+    const currentFrame =
+      rainViewerFrames[rainViewerFrameIndex] ?? rainViewerFrames[rainViewerFrames.length - 1];
     if (!currentFrame) return;
 
-    // 預載當前與下一幀，切換播放時流暢不閃爍
     const nextFrame = rainViewerFrames[(rainViewerFrameIndex + 1) % rainViewerFrames.length];
     const neededPaths = new Set([currentFrame.path, nextFrame.path]);
 
@@ -362,13 +355,14 @@ export function WarRoomMap({
       }
     });
 
+    const targetOpacity = basemap === 'nlsc' ? 0.6 : 0.72;
     rainViewerLayersRef.current.forEach((layer, pathKey) => {
       if (!map.hasLayer(layer)) layer.addTo(map);
-      layer.setOpacity(pathKey === currentFrame.path ? rainViewerOpacity : 0);
+      layer.setOpacity(pathKey === currentFrame.path ? targetOpacity : 0);
     });
-  }, [rainViewerEnabled, rainViewerHost, rainViewerFrames, rainViewerFrameIndex, rainViewerOpacity]);
+  }, [isRainViewerActive, rainViewerHost, rainViewerFrames, rainViewerFrameIndex, basemap]);
 
-  // 7. 標記差分渲染（Canvas 繪製未入選紅點 ＋ 發光聲納標記繪製顯示中鏡頭）
+  // 7. 標記差分渲染
   useEffect(() => {
     const map = mapRef.current;
     const renderer = canvasRendererRef.current;
@@ -378,7 +372,6 @@ export function WarRoomMap({
     const pinnedSet = new Set(pinnedIds);
     const offlineSet = new Set(offlineIds);
 
-    // 移除已不再顯示的 active markers
     activeMarkersRef.current.forEach((marker, id) => {
       if (!displayedSet.has(id)) {
         map.removeLayer(marker);
@@ -392,9 +385,7 @@ export function WarRoomMap({
       const passive = passiveMarkersRef.current.get(cam.id);
 
       if (isDisplayed) {
-        if (passive && map.hasLayer(passive)) {
-          map.removeLayer(passive);
-        }
+        if (passive && map.hasLayer(passive)) map.removeLayer(passive);
         const isPinned = pinnedSet.has(cam.id);
         const isHovered = hoveredCamId === cam.id;
         const existingActive = activeMarkersRef.current.get(cam.id);
@@ -433,9 +424,7 @@ export function WarRoomMap({
               { direction: 'top', offset: [0, -6], className: 'warroom-tooltip' }
             )
             .on('click', () => {
-              if (!isOffline) {
-                setFocusedCamId(cam.id);
-              }
+              if (!isOffline) setFocusedCamId(cam.id);
               map.flyTo([cam.lat, cam.lng], Math.max(map.getZoom(), 11), { duration: 0.7 });
             });
           dot.addTo(map);
