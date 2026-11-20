@@ -29,7 +29,11 @@
 - **極簡操作契約（使用者 2026-11-20 明示定案）**：廢除複雜圖層抽屜、多層疊加與手動透明度滑桿；由 `WeatherQuickBar.tsx` 採**嚴格單選互斥（「點啥顯示啥、其他全關」）**，唯獨「動態風場」維持獨立開關、「底圖」一鍵循環切換。
 - **純演算法層（`src/core/`，100% Vitest 單元測試覆蓋）**：`cameraSelector.ts`（釘選優先上限 4 支＋`level` 升冪＋距離排序＋離線自動遞補＋遮擋排除）、`spatialSorter.ts`（左右牆均衡切分與北→南排序）、`connectorGeometry.ts`（45° 戰術折線）、`urlSync.ts`（分享連結編解碼）。
 - **零重載影片牆（`DesktopVideoPool.tsx`）**：所有顯示中 `VideoCard` 維持於**單一扁平 React 清單（DOM 順序依 `cam.id` 字典序固定）**，透過 CSS `transform: translate3d(x,y,0)` 定位至左右牆格位，確保拖動地圖或跨牆換位時不觸發 `insertBefore` 與 YouTube iframe 重載。預設前 4 順位自動錯峰直播，其餘格位採縮圖延遲啟動（可切換全直播滿載）。
-- **SVG 座標與行動端契約**：`ConnectorOverlay.tsx` 以 `#connection-layer` 實際 `getBoundingClientRect()` 設定 `viewBox` 並減去 `svgRect.left`/`top`；手機版（`<= 1024px`）採滿版地圖＋三段式 `MobileBottomSheet.tsx`（同時最多自動播 2 支省電）。
+- **SVG 座標與行動端契約**：`ConnectorOverlay.tsx` 直接訂閱 Leaflet `move`/`zoom` 並以快取 `getBoundingClientRect()` ＋原生 DOM `setAttribute` 繪製（拖曳縮放期間 **0 次 React 重繪**，嚴禁在根元件 `<App />` 綁 `move`/`zoom` `setState`）；手機版（`<= 1024px`）採滿版地圖＋三段式 `MobileBottomSheet.tsx`（同時最多自動播 2 支省電）。
+- **防凍屏／防記憶體洩漏硬性紅線（2026-11-20 實測修復）**：
+  1. RainViewer 地圖同時掛載上限嚴格為 **2 層**（當前幀＋下一幀預載），切換時立即 `removeLayer` 舊幀並設 `keepBuffer: 0, updateWhenZooming: false`；拖曳縮放中暫停時間軸推進。
+  2. 底圖與置頂地名層一律設 `keepBuffer: 1, updateWhenZooming: false, updateWhenIdle: true`。
+  3. 視角鏡頭切換防抖須為 **750ms**（`movestart`/`zoomstart` 取消計時），且 `YouTubeLivePlayer` 卸載時先將子 `iframe.src = 'about:blank'` 再 `destroy()` 立即釋放 Chromium MSE 解碼記憶體；`VideoCard` 包裝 `React.memo`。
 - **開發校正工具（`CalibrationDrawer.tsx`）**：採 `React.lazy` 動態載入，僅於 `?debug=calib` 或圖層面板入口載入；調整結果即時存 LocalStorage 並提供 JSON 複製。
 
 ### 3. 已校正 CWA 氣象疊圖邊界（`DEFAULT_CALIBRATION_BOUNDS`）

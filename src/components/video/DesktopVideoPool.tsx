@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { VideoSlotRect } from '../../core/spatialSorter';
 import { useWarRoomStore } from '../../store/useWarRoomStore';
 import type { Webcam } from '../../types/webcam';
@@ -48,14 +48,17 @@ export function DesktopVideoPool({ slots, visible }: DesktopVideoPoolProps) {
     [slots]
   );
 
+  const handleLocate = useCallback(
+    (cam: Webcam) => {
+      requestFlyTo(cam.lat, cam.lng, 12);
+    },
+    [requestFlyTo]
+  );
+
   if (!visible || stableSlots.length === 0) return null;
 
   const pinnedSet = new Set(pinnedIds);
   const activatedSet = new Set(activatedFacadeIds);
-
-  const handleLocate = (cam: Webcam) => {
-    requestFlyTo(cam.lat, cam.lng, 12);
-  };
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[500]">

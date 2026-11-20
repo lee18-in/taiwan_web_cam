@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type L from 'leaflet';
 import rawWebcams from './data/webcams.json';
 import { selectDisplayWebcams } from './core/cameraSelector';
@@ -23,7 +23,6 @@ const AUTO_REFRESH_MS = 10 * 60 * 1000;
 
 export function App() {
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
-  const [redrawTick, setRedrawTick] = useState(0);
   const [viewportSize, setViewportSize] = useState(() => ({
     width: typeof window !== 'undefined' ? window.innerWidth : 1440,
     height: typeof window !== 'undefined' ? window.innerHeight : 900
@@ -76,7 +75,6 @@ export function App() {
   useEffect(() => {
     const onResize = () => {
       setViewportSize({ width: window.innerWidth, height: window.innerHeight });
-      setRedrawTick((t) => t + 1);
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -186,17 +184,12 @@ export function App() {
     };
   }, [displayedCams, mergeTelemetry]);
 
-  const handleMapVisualMove = useCallback(() => {
-    setRedrawTick((t) => t + 1);
-  }, []);
-
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#060b16]">
       <WarRoomMap
         webcams={WEBCAMS}
         displayedCams={displayedCams}
         onMapReady={setMapInstance}
-        onMapVisualMove={handleMapVisualMove}
       />
 
       <ConnectorOverlay
@@ -204,7 +197,6 @@ export function App() {
         slots={desktopLayout.slots}
         pinnedIds={pinnedIds}
         hoveredCamId={hoveredCamId}
-        redrawTick={redrawTick}
         visible={!isMobile && !wallsCollapsed}
       />
 

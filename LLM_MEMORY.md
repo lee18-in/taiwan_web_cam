@@ -5,9 +5,9 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-20 13:57 / 當時階段: build
+- 最後更新: 2026-11-20 14:12 / 當時階段: build
 - 交接基準 commit: 0ee8a5a [plan] 補建 COMPONENT_MAP 並完成路線 A 炫砲戰情室大改版規劃
-- 進行中任務: v2 極簡單選氣象切換列與低 CPU 風場效能優化已建置並推送上線，待使用者實測回饋與審閱結案
+- 進行中任務: v2 極簡單選氣象列＋風場瘦身＋拖曳縮放記憶體洩漏／卡死 4 項根因修復已推送上線，待使用者實測與審閱結案
 - 阻塞點: 無
 
 > 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
@@ -25,12 +25,12 @@
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
 
-### 2026-11-20 13:57 [build] 使用工具: Antigravity
+### 2026-11-20 14:12 [build] 使用工具: Antigravity
 
-- 完成了什麼: 使用者於 `2026-11-20 13:51` 明示豁免前筆 `236b466` 中途審閱並指示改極簡單選與推送供自測。已移除 `WeatherDrawer` 與手動透明度/濾色操作，改以底部 `WeatherQuickBar` 嚴格單選氣象圖＋獨立風場開關＋底圖一鍵循環；同步重構 `WindFlowCanvas` 為 36×28 螢幕查表＋5 桶批次描邊＋30fps 降 CPU（細節見 `COMPONENT_MAP.md`）。
-- 驗證方式: `npm test` 12/12 全過；`npm run build`（`tsc` + Vite 606ms）零錯誤；Chrome 1440×900 與 520×844 實機截圖確認底部單選列、雨帶時間軸與行動端排版無遮擋；推送後經 GitHub Actions 部署驗證。
-- 下一個 agent 該做什麼: 本次改動需要審閱：批次核對 `0ee8a5a..HEAD` v2 完整重構、單選狀態機與 `WindFlowCanvas` 查表優化。等待 `new session`／新工具審閱或使用者實測後結案。
-- 地雷警告: 本機 Node 在 `/opt/homebrew/bin`；CartoDB 免費圖磚有浮水印禁切回。
+- 完成了什麼: 依使用者 `13:51` 豁免與 `14:08` 實測回報「縮放拖拉幾次網頁沒反應」，除改為極簡一鍵單選列與 36×28 螢幕查表低 CPU 風場外，進一步修復 4 項記憶體／凍屏根因：RainViewer 圖層洩漏（13 層→上限 2 層）、移除根 `<App />` `move`/`zoom` 重繪改由 SVG 直連 DOM、YouTube 卸載 `about:blank` 釋放 MSE＋750ms 防抖、圖磚加 `updateWhenZooming: false`（紅線見 `COMPONENT_MAP.md`）。
+- 驗證方式: `npm test` 12/12 過；`npm run build`（608ms）零錯；Chrome 14 秒連續輪播 DOM 實測 RainViewer 掛載層數 `2`（上限 `<=2`）、總圖磚 `76` 張、active iframe `4` 個；並推送經 GitHub Actions 驗證上線。
+- 下一個 agent 該做什麼: 本次改動需要審閱：批次核對 `0ee8a5a..HEAD` v2 重構、單選狀態機、風場查表與 4 項記憶體修復。等待 `new session`／新工具審閱或使用者實測結案。
+- 地雷警告: 嚴禁在 `<App />` 綁 `move`/`zoom` `setState` 或累積 >2 層 RainViewer TileLayer；CartoDB 圖磚有浮水印禁切回。
 
 ### 2026-11-20 12:13 [build] 使用工具: Antigravity
 

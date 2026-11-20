@@ -31,6 +31,7 @@ export function YouTubeLivePlayer({
 }: YouTubeLivePlayerProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayerInstance | null>(null);
+  const initialStaggerRef = useRef(staggerDelayMs);
   const [readyToMount, setReadyToMount] = useState(staggerDelayMs === 0);
   const [attemptIndex, setAttemptIndex] = useState(0);
   const [useFallbackIframe, setUseFallbackIframe] = useState(false);
@@ -38,15 +39,16 @@ export function YouTubeLivePlayer({
   const candidateIds = [videoId, ...backupVideoIds].filter(Boolean);
   const activeVideoId = candidateIds[attemptIndex] ?? videoId;
 
-  // 錯峰掛載
+  // 僅於首次掛載錯峰延遲，後續陣列索引變動絕不重跑
   useEffect(() => {
-    if (staggerDelayMs <= 0) {
+    const delay = initialStaggerRef.current;
+    if (delay <= 0) {
       setReadyToMount(true);
       return;
     }
-    const timer = window.setTimeout(() => setReadyToMount(true), staggerDelayMs);
+    const timer = window.setTimeout(() => setReadyToMount(true), delay);
     return () => window.clearTimeout(timer);
-  }, [staggerDelayMs]);
+  }, []);
 
   useEffect(() => {
     if (!readyToMount || useFallbackIframe) return;
@@ -108,12 +110,25 @@ export function YouTubeLivePlayer({
 
     return () => {
       disposed = true;
+      // 主動將 iframe 指向 about:blank，促使 Chromium 立即回收 MSE 影音解碼記憶體
+      if (hostRef.current) {
+        hostRef.current.querySelectorAll('iframe').forEach((frame) => {
+          try {
+            frame.src = 'about:blank';
+          } catch {
+            // ignore
+          }
+        });
+      }
       try {
         playerRef.current?.destroy();
       } catch {
         // ignore destroy error
       }
       playerRef.current = null;
+      if (hostRef.current) {
+        hostRef.current.innerHTML = '';
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readyToMount, activeVideoId, useFallbackIframe, muted]);

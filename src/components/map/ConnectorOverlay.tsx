@@ -8,22 +8,19 @@ interface ConnectorOverlayProps {
   slots: VideoSlotRect[];
   pinnedIds: string[];
   hoveredCamId: string | null;
-  redrawTick: number;
   visible: boolean;
 }
 
 /**
- * 節點復用 SVG 戰術雷射連線層：
- * - 以 getBoundingClientRect() 設定 viewBox 避開行動裝置 100vh 位移問題（依 COMPONENT_MAP 契約）
- * - 採用 45° 戰術折線 + CSS 流動脈衝動畫，不使用高耗能 filter: drop-shadow
- * - 透過直接操作既有 DOM 節點 setAttribute + rAF 節流，拖動地圖維持 60fps
+ * 零 React 重繪之節點復用 SVG 戰術雷射連線層：
+ * - 直接訂閱 Leaflet move/zoom 事件並透過 rAF 操作原生 DOM setAttribute，拖曳縮放期間 0 次 React 重繪！
+ * - 快取 svgRect／mapRect 僅於 resize 時重測，消除拖曳期間每幀 getBoundingClientRect() 強制排版回流。
  */
 export function ConnectorOverlay({
   map,
   slots,
   pinnedIds,
   hoveredCamId,
-  redrawTick,
   visible
 }: ConnectorOverlayProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -32,22 +29,37 @@ export function ConnectorOverlay({
   const startDotRefs = useRef<Map<string, SVGCircleElement>>(new Map());
   const endDotRefs = useRef<Map<string, SVGCircleElement>>(new Map());
   const rafRef = useRef<number | null>(null);
+  const slotsRef = useRef<VideoSlotRect[]>(slots);
+  const rectCacheRef = useRef<{ svgRect: DOMRect; mapRect: DOMRect } | null>(null);
+
+  slotsRef.current = slots;
 
   useEffect(() => {
     if (!visible || !map || !svgRef.current) return;
 
-    const draw = () => {
-      rafRef.current = null;
+    const refreshRectCache = () => {
       const svg = svgRef.current;
-      if (!svg || !map) return;
-
+      if (!svg) return;
       const svgRect = svg.getBoundingClientRect();
       const mapRect = map.getContainer().getBoundingClientRect();
-      if (svgRect.width <= 0 || svgRect.height <= 0) return;
+      if (svgRect.width > 0 && svgRect.height > 0) {
+        svg.setAttribute('viewBox', `0 0 ${svgRect.width} ${svgRect.height}`);
+        rectCacheRef.current = { svgRect, mapRect };
+      }
+    };
 
-      svg.setAttribute('viewBox', `0 0 ${svgRect.width} ${svgRect.height}`);
+    const draw = () => {
+      rafRef.current = null;
+      if (!svgRef.current || !map) return;
+      if (!rectCacheRef.current) refreshRectCache();
+      const cache = rectCacheRef.current;
+      if (!cache) return;
 
-      for (const slot of slots) {
+      const { svgRect, mapRect } = cache;
+      const currentSlots = slotsRef.current;
+
+      for (let i = 0; i < currentSlots.length; i++) {
+        const slot = currentSlots[i];
         const pt = map.latLngToContainerPoint([slot.cam.lat, slot.cam.lng]);
         const targetX = mapRect.left + pt.x - svgRect.left;
         const targetY = mapRect.top + pt.y - svgRect.top;
@@ -81,17 +93,71 @@ export function ConnectorOverlay({
       }
     };
 
-    if (rafRef.current === null) {
-      rafRef.current = window.requestAnimationFrame(draw);
-    }
+    const scheduleDraw = () => {
+      if (rafRef.current === null) {
+        rafRef.current = window.requestAnimationFrame(draw);
+      }
+    };
+
+    const onResize = () => {
+      refreshRectCache();
+      scheduleDraw();
+    };
+
+    refreshRectCache();
+    scheduleDraw();
+
+    map.on('move zoom moveend zoomend', scheduleDraw);
+    window.addEventListener('resize', onResize);
 
     return () => {
+      map.off('move zoom moveend zoomend', scheduleDraw);
+      window.removeEventListener('resize', onResize);
       if (rafRef.current !== null) {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
     };
-  }, [map, slots, redrawTick, visible]);
+  }, [map, visible]);
+
+  // 當卡片格位變動時補繪一次
+  useEffect(() => {
+    if (!visible || !map || !svgRef.current) return;
+    const id = window.requestAnimationFrame(() => {
+      const svg = svgRef.current;
+      if (!svg) return;
+      const svgRect = svg.getBoundingClientRect();
+      const mapRect = map.getContainer().getBoundingClientRect();
+      if (svgRect.width <= 0 || svgRect.height <= 0) return;
+      svg.setAttribute('viewBox', `0 0 ${svgRect.width} ${svgRect.height}`);
+      rectCacheRef.current = { svgRect, mapRect };
+
+      for (const slot of slots) {
+        const pt = map.latLngToContainerPoint([slot.cam.lat, slot.cam.lng]);
+        const targetX = mapRect.left + pt.x - svgRect.left;
+        const targetY = mapRect.top + pt.y - svgRect.top;
+        const startX =
+          (slot.side === 'left' ? slot.x + slot.width : slot.x) - svgRect.left;
+        const startY = slot.y + slot.height / 2 - svgRect.top;
+
+        const { pathD } = computeTacticalElbowPath({
+          startX,
+          startY,
+          targetX,
+          targetY,
+          side: slot.side
+        });
+
+        glowRefs.current.get(slot.id)?.setAttribute('d', pathD);
+        lineRefs.current.get(slot.id)?.setAttribute('d', pathD);
+        startDotRefs.current.get(slot.id)?.setAttribute('cx', String(startX));
+        startDotRefs.current.get(slot.id)?.setAttribute('cy', String(startY));
+        endDotRefs.current.get(slot.id)?.setAttribute('cx', String(targetX));
+        endDotRefs.current.get(slot.id)?.setAttribute('cy', String(targetY));
+      }
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [map, slots, visible]);
 
   if (!visible || slots.length === 0) return null;
 
@@ -115,7 +181,6 @@ export function ConnectorOverlay({
 
         return (
           <g key={slot.id} style={{ opacity, transition: 'opacity 180ms ease' }}>
-            {/* 雙層柔和光暈（無 drop-shadow 濾鏡，GPU 友善） */}
             <path
               ref={(el) => {
                 if (el) glowRefs.current.set(slot.id, el);
@@ -128,7 +193,6 @@ export function ConnectorOverlay({
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            {/* 主 45° 戰術流動脈衝線 */}
             <path
               ref={(el) => {
                 if (el) lineRefs.current.set(slot.id, el);
@@ -141,7 +205,6 @@ export function ConnectorOverlay({
               strokeLinejoin="round"
               className={isHovered ? 'connector-pulse-line-fast' : 'connector-pulse-line'}
             />
-            {/* 卡片起點接頭 */}
             <circle
               ref={(el) => {
                 if (el) startDotRefs.current.set(slot.id, el);
@@ -150,7 +213,6 @@ export function ConnectorOverlay({
               r={isHovered ? 3.5 : 2.5}
               fill={activeColor}
             />
-            {/* 地標端點鎖定核 */}
             <circle
               ref={(el) => {
                 if (el) endDotRefs.current.set(slot.id, el);

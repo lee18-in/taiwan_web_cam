@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Crosshair, ExternalLink, Maximize2, Pin, Play, Wind, Droplets } from 'lucide-react';
 import { getYouTubeThumbnailUrl, getYouTubeWatchUrl } from '../../services/youtubeApi';
 import type { CameraWeatherTelemetry, Webcam } from '../../types/webcam';
@@ -19,7 +20,7 @@ interface VideoCardProps {
   onStreamError: (id: string) => void;
 }
 
-export function VideoCard({
+export const VideoCard = memo(function VideoCard({
   cam,
   isPinned,
   isHovered,
@@ -173,4 +174,4 @@ export function VideoCard({
       </div>
     </div>
   );
-}
+});

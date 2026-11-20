@@ -14,11 +14,16 @@ import type { Webcam } from '../../types/webcam';
 import type { WeatherLayerId } from '../../types/weather';
 import { WindFlowController } from './WindFlowCanvas';
 
+/** 供 RainViewer 時間軸讀取，拖曳／縮放期間暫停切換幀以防記憶體尖峰（無 React 重繪） */
+let mapInteractingFlag = false;
+export function isMapCurrentlyInteracting(): boolean {
+  return mapInteractingFlag;
+}
+
 interface WarRoomMapProps {
   webcams: Webcam[];
   displayedCams: Webcam[];
   onMapReady: (map: L.Map) => void;
-  onMapVisualMove: () => void;
 }
 
 function escapeHtml(text: string): string {
@@ -51,12 +56,7 @@ function createActiveMarkerIcon(pinned: boolean, hovered: boolean): L.DivIcon {
   });
 }
 
-export function WarRoomMap({
-  webcams,
-  displayedCams,
-  onMapReady,
-  onMapVisualMove
-}: WarRoomMapProps) {
+export function WarRoomMap({ webcams, displayedCams, onMapReady }: WarRoomMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
@@ -67,7 +67,9 @@ export function WarRoomMap({
 
   const canvasRendererRef = useRef<L.Canvas | null>(null);
   const passiveMarkersRef = useRef<Map<string, L.CircleMarker>>(new Map());
-  const activeMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const activeMarkersRef = useRef<
+    Map<string, { marker: L.Marker; pinned: boolean; hovered: boolean }>
+  >(new Map());
 
   const basemap = useWarRoomStore((s) => s.basemap);
   const activeLayer = useWarRoomStore((s) => s.activeLayer);
@@ -138,20 +140,33 @@ export function WarRoomMap({
         });
       };
       if (debounceTimer) window.clearTimeout(debounceTimer);
-      if (immediate) run();
-      else debounceTimer = window.setTimeout(run, 240);
+      if (immediate) {
+        run();
+      } else {
+        // 750ms 防抖：連續快速縮放拖曳期間絕不反覆銷毀／重建 YouTube iframe 吃爆記憶體
+        debounceTimer = window.setTimeout(run, 750);
+      }
     };
 
-    map.on('moveend zoomend', () => {
+    const onInteractStart = () => {
+      mapInteractingFlag = true;
+      if (debounceTimer) {
+        window.clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
+    };
+
+    const onInteractEnd = () => {
+      mapInteractingFlag = false;
       emitViewport(false);
-      onMapVisualMove();
-    });
-    map.on('move zoom', onMapVisualMove);
+    };
+
+    map.on('movestart zoomstart', onInteractStart);
+    map.on('moveend zoomend', onInteractEnd);
 
     const handleResize = () => {
       map.invalidateSize({ animate: false });
       emitViewport(false);
-      onMapVisualMove();
     };
     window.addEventListener('resize', handleResize);
 
@@ -160,6 +175,7 @@ export function WarRoomMap({
     emitViewport(true);
 
     return () => {
+      mapInteractingFlag = false;
       if (debounceTimer) window.clearTimeout(debounceTimer);
       window.removeEventListener('resize', handleResize);
       windControllerRef.current?.destroy();
@@ -185,6 +201,7 @@ export function WarRoomMap({
   }, [flyToTarget]);
 
   // 3. 底圖切換（3 種免費無浮水印底圖）＋ 自動置頂台灣繁中地名
+  //    加上 keepBuffer: 1 / updateWhenZooming: false 防止快速縮放累積大量未釋放圖磚
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -196,7 +213,10 @@ export function WarRoomMap({
       subdomains: cfg.subdomains ?? '',
       maxZoom: cfg.maxZoom,
       attribution: `${cfg.attribution} | 影像版權屬原建置單位`,
-      crossOrigin: true
+      crossOrigin: true,
+      keepBuffer: 1,
+      updateWhenZooming: false,
+      updateWhenIdle: true
     });
     baseLayer.addTo(map);
     basemapLayerRef.current = baseLayer;
@@ -210,14 +230,17 @@ export function WarRoomMap({
         maxZoom: 19,
         opacity: 0.78,
         pane: 'labels-overlay',
-        crossOrigin: true
+        crossOrigin: true,
+        keepBuffer: 1,
+        updateWhenZooming: false,
+        updateWhenIdle: true
       });
       labelLayer.addTo(map);
       labelsLayerRef.current = labelLayer;
     }
   }, [basemap]);
 
-  // 4. 嚴格單選 CWA 官方疊圖（切換立刻清除舊層，自動依底圖套用最佳透明度與混色）
+  // 4. 嚴格單選 CWA 官方疊圖
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -249,7 +272,6 @@ export function WarRoomMap({
       imgEl.style.mixBlendMode = blendMode;
     };
 
-    // 若切換到不同 CWA 圖層，立即移除舊層
     if (activeCwaOverlayRef.current && activeCwaOverlayRef.current.id !== cwaId) {
       map.removeLayer(activeCwaOverlayRef.current.layer);
       activeCwaOverlayRef.current = null;
@@ -287,7 +309,7 @@ export function WarRoomMap({
     };
   }, [activeLayer, basemap, customBounds, weatherRefreshNonce]);
 
-  // 5. 高效能 Windy 動態風場流線（獨立開關）
+  // 5. 高效能 Windy 動態風場流線
   useEffect(() => {
     const ctrl = windControllerRef.current;
     if (!ctrl) return;
@@ -305,7 +327,7 @@ export function WarRoomMap({
     };
   }, [windEnabled, weatherRefreshNonce]);
 
-  // 6. RainViewer 2 小時動態雷達（僅在 activeLayer === 'rainViewer' 時啟用）
+  // 6. RainViewer 2 小時動態雷達（記憶體嚴格上限：地圖上同時最多僅保留 2 層：當前幀＋下一幀預載！）
   useEffect(() => {
     if (!isRainViewerActive) {
       const map = mapRef.current;
@@ -314,6 +336,7 @@ export function WarRoomMap({
           if (map.hasLayer(layer)) map.removeLayer(layer);
         });
       }
+      rainViewerLayersRef.current.clear();
       return;
     }
 
@@ -339,6 +362,14 @@ export function WarRoomMap({
     const nextFrame = rainViewerFrames[(rainViewerFrameIndex + 1) % rainViewerFrames.length];
     const neededPaths = new Set([currentFrame.path, nextFrame.path]);
 
+    // 關鍵記憶體修復：立刻移除非當前／非下一幀的舊 TileLayer，絕不讓 13 個圖層同時掛在地圖上！
+    rainViewerLayersRef.current.forEach((layer, pathKey) => {
+      if (!neededPaths.has(pathKey)) {
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+        rainViewerLayersRef.current.delete(pathKey);
+      }
+    });
+
     neededPaths.forEach((p) => {
       const frame = rainViewerFrames.find((f) => f.path === p);
       if (!frame) return;
@@ -348,7 +379,10 @@ export function WarRoomMap({
           maxNativeZoom: 7,
           maxZoom: 18,
           opacity: 0,
-          crossOrigin: true
+          crossOrigin: true,
+          keepBuffer: 0,
+          updateWhenZooming: false,
+          updateWhenIdle: true
         });
         layer.addTo(map);
         rainViewerLayersRef.current.set(p, layer);
@@ -362,7 +396,7 @@ export function WarRoomMap({
     });
   }, [isRainViewerActive, rainViewerHost, rainViewerFrames, rainViewerFrameIndex, basemap]);
 
-  // 7. 標記差分渲染
+  // 7. 標記差分渲染（僅在狀態真有改變時更新 icon，避免不必要 DOM 重建）
   useEffect(() => {
     const map = mapRef.current;
     const renderer = canvasRendererRef.current;
@@ -372,9 +406,9 @@ export function WarRoomMap({
     const pinnedSet = new Set(pinnedIds);
     const offlineSet = new Set(offlineIds);
 
-    activeMarkersRef.current.forEach((marker, id) => {
+    activeMarkersRef.current.forEach((entry, id) => {
       if (!displayedSet.has(id)) {
-        map.removeLayer(marker);
+        map.removeLayer(entry.marker);
         activeMarkersRef.current.delete(id);
       }
     });
@@ -402,10 +436,12 @@ export function WarRoomMap({
             .on('mouseover', () => setHoveredCamId(cam.id))
             .on('mouseout', () => setHoveredCamId(null));
           marker.addTo(map);
-          activeMarkersRef.current.set(cam.id, marker);
-        } else {
-          existingActive.setIcon(createActiveMarkerIcon(isPinned, isHovered));
-          existingActive.setZIndexOffset(isHovered ? 800 : isPinned ? 500 : 200);
+          activeMarkersRef.current.set(cam.id, { marker, pinned: isPinned, hovered: isHovered });
+        } else if (existingActive.pinned !== isPinned || existingActive.hovered !== isHovered) {
+          existingActive.marker.setIcon(createActiveMarkerIcon(isPinned, isHovered));
+          existingActive.marker.setZIndexOffset(isHovered ? 800 : isPinned ? 500 : 200);
+          existingActive.pinned = isPinned;
+          existingActive.hovered = isHovered;
         }
       } else {
         if (!passive) {
@@ -429,8 +465,8 @@ export function WarRoomMap({
             });
           dot.addTo(map);
           passiveMarkersRef.current.set(cam.id, dot);
-        } else {
-          if (!map.hasLayer(passive)) passive.addTo(map);
+        } else if (!map.hasLayer(passive)) {
+          passive.addTo(map);
           passive.setStyle({
             fillColor: isOffline ? '#64748b' : '#f43f5e',
             fillOpacity: isOffline ? 0.55 : 0.9

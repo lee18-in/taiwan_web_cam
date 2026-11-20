@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { formatTaipeiFrameTime } from '../../services/rainViewer';
 import { useWarRoomStore } from '../../store/useWarRoomStore';
+import { isMapCurrentlyInteracting } from '../map/WarRoomMap';
 
 interface RadarTimelineBarProps {
   isMobile: boolean;
@@ -24,9 +25,11 @@ export function RadarTimelineBar({ isMobile }: RadarTimelineBarProps) {
   useEffect(() => {
     if (!enabled || !playing || frames.length <= 1) return;
     const interval = window.setInterval(() => {
+      // 分頁隱藏或使用者正在拖拉縮放地圖時暫停推進幀，避免圖磚請求雪崩
+      if (document.hidden || isMapCurrentlyInteracting()) return;
       const cur = useWarRoomStore.getState().rainViewerFrameIndex;
       setFrameIndex((cur + 1) % frames.length);
-    }, 750);
+    }, 900);
     return () => window.clearInterval(interval);
   }, [enabled, playing, frames.length, setFrameIndex]);
 
