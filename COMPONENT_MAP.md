@@ -5,58 +5,65 @@
 ## 六十秒進入狀況
 
 - **專案**：台灣即時影像戰情室（`https://github.com/lee18-in/taiwan_web_cam`｜Live：`https://lee18-in.github.io/taiwan_web_cam/`）。
-- **核心目標**：結合台灣暗黑地圖、全台「鏡頭君」YouTube 即時影像與氣象圖層，特別服務「颱風／豪雨時點開網頁即掌握風雨與現場實況」情境。
-- **現行實況**：全站目前為單檔純靜態網頁 `index.html`（1,166 行，約 52.7 KB，無建置步驟），由 `.github/workflows/static.yml` 直接部署 `.` 至 GitHub Pages。
-- **已定案最高紅線（使用者 2026-11-20 明示）**：
-  1. **100% 免費部署於 GitHub Free 服務**（GitHub Pages + GitHub Actions），不引入付費後端、不引入需付費 API Key 的強制依賴。
-  2. **視覺與體驗優先（「怎麼炫怎麼來」）**，同時維持首屏流暢與行動端可用性。
+- **核心目標**：結合台灣暗黑地圖、全台 56 處「鏡頭君」YouTube 即時影像、動態風場與雙軌氣象圖層，專為「颱風／豪雨時點開即掌握風雨與現場畫面」打造。
+- **v2 現代化架構（路線 A，已落地）**：Vite 6 + React 19 + TypeScript (Strict) + Tailwind CSS v4 + Zustand (LocalStorage 持久化) + Leaflet 1.9.4 (`preferCanvas: true`)，編譯至 `./dist` 由 `.github/workflows/static.yml` 免費部署至 GitHub Pages。
+- **舊版保留契約（使用者 2026-11-20 明示）**：原始 1,166 行單檔版本已原樣保存於 `public/legacy.html`（打包後於 `/taiwan_web_cam/legacy.html` 持續可用，頂部 HUD 具「舊版」切換連結）。
+- **最高紅線**：100% 部署於 GitHub Free（GitHub Pages + Actions），零付費後端、零付費 API Key；視覺體驗採高張力戰情室規格。
 
 ---
 
-## 一、現行系統結構與跨模組契約（已驗證實況）
+## 一、v2 系統結構與跨模組契約
 
-### 1. 單檔結構（`index.html`）
-- **底圖與依賴**：Leaflet 1.9.4（unpkg CDN）+ CartoDB Dark Matter 底圖 + YouTube Embed URL（目前直接拼字串，尚未接入 YouTube Iframe Player API）。
-- **攝影機資料（`webcams` 陣列，共 52 筆）**：欄位為 `level`（0–4，數字越小優先權越高）、`videoId`、`lat`、`lng`、`name`。
-- **動態影片牆與防遮擋邏輯**：
-  - 桌機（`> 1024px`）最多 8 格（左右牆，依經度切西／東、緯度由北到南排）；手機（`<= 1024px`）最多 4 格（上下夾心，緯度分上下、經度分左右防連線交錯）。
-  - 優先規則：不依縮放層級隱藏低階點，一律取可視範圍內依 `level` 升冪、同級依距中心點距離升冪排序；並迴圈最多 3 次排除被影片牆遮擋的候選點（`getDisplayCams()`）。
-- **SVG 指引線座標修正契約（重要踩坑定案）**：
-  - 行動裝置動態網址列會讓 CSS `100vh` 與 `window.innerHeight` 不一致；SVG 畫布必須以 `#connection-layer` 實際 `getBoundingClientRect()` 設定 `viewBox`，並將目標／起點 client 座標減去 `svgRect.left`/`top` 映射至 SVG 內部座標系。
-  - 每次容器尺寸或排版變更後，必須立即呼叫 `map.invalidateSize({ animate: false })` 刷新 Leaflet 快取。
-- **開發者校正工具（`#calibration-tool`）**：點地圖右下版權列 ⚙️ 開啟，提供 5 組邊界滑軌即時調整並複製 JSON 陣列。
-
-### 2. 已校正氣象疊圖邊界（`satBoundsGroup`，務必完整保留）
-| 群組鍵值 | 對應 CWA 圖資 | 已校正經緯度邊界 `[[s, w], [n, e]]` |
-|---|---|---|
-| `radarBounds` | 雷達回波 `CV1_TW_3600.png` | `[[20.455, 118.000], [26.480, 124.000]]` |
-| `rainfallBounds` | 累積雨量 `QZJ.jpg` | `[[21.505, 119.195], [25.900, 123.575]]` |
-| `1350` | 衛星可見光 `TWI_VIS_Gray_1350.jpg`、真實色 `TWI_TRGB_1350.jpg` | `[[19.030, 115.925], [28.215, 126.070]]` |
-| `800` | 衛星彩色 `TWI_IR1_CR_800.jpg`、色調強化 `TWI_IR1_MB_800.jpg`、黑白 `TWI_IR1_Gray_800.jpg` | `[[19.050, 115.935], [28.195, 126.055]]` |
-| `sfcBounds` | 地面等壓天氣圖 `SFCcombo.jpg` | `[[-0.340, 80.630], [56.690, 167.995]]` |
-
-### 3. 已知現行結構痛點（重構驅動原因）
-- `renderVideoWall()` 以 `wall.innerHTML` 重建整排，名單差 1 台即導致其餘 7 支直播斷流重載；一次自動播放 8 支 iframe 造成高 CPU/RAM 負載。
-- `zoom`/`move` 每幀重寫 SVG `innerHTML` 並套用 `filter: drop-shadow`；`zoomend` 重複觸發 `updateMarkersVisibility()` 並全量清空重建未顯示紅點。
-- Popup 標題未經 `escapeHtml()`；無 YouTube 串流失效容錯；手機版字體縮至 `6px`–`7px` 難以操作。
-
----
-
-## 二、外部資源與環境驗證台帳
-
-| 驗證日期 | 對象 / 機制 | 實測結果 | 架構契約 / 結論 |
+### 1. 6 層「戰情三明治」地圖分層（`src/components/map/WarRoomMap.tsx`）
+| 層級 | Leaflet Pane / 層 | z-index | 內容與契約 |
 |---|---|---|---|
-| 2026-11-20 | 中央氣象署 8 張圖資（`www.cwa.gov.tw/Data/...`） | `curl -sI` 帶 `Origin` 與 `Referer: https://lee18-in.github.io/taiwan_web_cam/` 均回 `HTTP/1.1 200 OK`（HiNetCDN），但**無 `Access-Control-Allow-Origin` 標頭** | **關鍵架構決策**：不可用 WebGL 跨網域貼圖（如 MapLibre `image` source）直連，否則觸發瀏覽器 CORS 阻擋。**必須以 DOM `<img>`（Leaflet `L.imageOverlay`）疊圖**，即可 100% 純 GitHub Pages 零 Proxy 運作；並可加 `referrerPolicy="no-referrer"` 預防未來擋 Referer。 |
-| 2026-11-20 | Open-Meteo API（`api.open-meteo.com/v1/forecast`） | 實測多座標批次查詢 `HTTP/1.1 200 OK`、`access-control-allow-origin: *`、免 Key、回傳氣溫／風速／風向／陣風／降雨 | 可純前端直連，用於鏡頭即時風雨遙測與台灣網格動態風場流線（建議快取 10 分鐘控制請求量）。 |
-| 2026-11-20 | RainViewer API（`api.rainviewer.com/public/weather-maps.json` 與 `tilecache.rainviewer.com`） | 實測 `HTTP/2 200`、`access-control-allow-origin: *`、免 Key；回傳過去 13 幀雷達路徑，z6/z7 PNG 圖磚均 `200 OK` | 可純前端直連提供過去約 2 小時動態雷達時間軸播放（搭配 Leaflet `maxNativeZoom: 7` 與 CWA 高解析靜態圖互補）。 |
-| 2026-11-20 | YouTube oEmbed（`www.youtube.com/oembed`） | 實測 `200 OK` 回傳 JSON，免 Key | 可供 GitHub Actions 定期巡檢失效影片 ID（前端執行期另由 YouTube Iframe Player API `onError` 補強）。 |
-| 2026-11-20 | Git Hooks 環境自檢 | `git config --get core.hooksPath` 為 `scripts/hooks`，`pre-commit` 與 `commit-msg` 皆具 `+x` 權限 | 每次 commit 強制檢核同目錄 `LLM_MEMORY.md` 同步異動與 `[plan|build|maintain|takeover]` 標籤，禁用 `--no-verify`。 |
+| Layer 6 | `markerPane` + SVG Overlay | `440–450+` | Canvas 未入選紅點、活躍發光聲納標記、節點復用 45° 戰術脈衝雷射連線（`ConnectorOverlay.tsx`） |
+| Layer 5 | `labels-overlay` | `380` | **內政部國土測繪中心 `NLSC EMAP2` 透明繁體中文地名與國道路網**（浮於所有雲圖與雷達之上，避免雨帶蓋字） |
+| Layer 4 | `weather-wind` | `350` | `WindFlowCanvas.ts`（Open-Meteo 6×6 網格雙線性內插 Canvas 2D 動態風場粒子流線） |
+| Layer 3 | `weather-radar` | `320` | RainViewer 2 小時透明背景動態雷達圖磚（`maxNativeZoom: 7`）＋ CWA 雷達／累積雨量疊圖 |
+| Layer 2 | `weather-cloud` | `300` | CWA 5 種衛星雲圖與地面等壓天氣圖（支援多圖層疊加、獨立透明度與 `mix-blend-mode: screen`） |
+| Layer 1 | `tilePane` | `200` | 3 種免費無浮水印底圖互斥單選（Esri 暗黑畫布、Esri 衛星實景、NLSC 台灣繁中電子地圖） |
+
+### 2. 核心模組分工與契約
+- **資料層**：`src/data/webcams.json`（完整遷移 56 筆，含 `id`/`region`/`county`/`tags`/`stream`，已以腳本比對 `public/legacy.html` 100% 吻合）、`src/data/mapLayers.ts`（3 底圖、8 CWA 圖層、5 組已校正邊界、4 一鍵組合、dBZ/mm 色階圖例）。
+- **純演算法層（`src/core/`，100% Vitest 單元測試覆蓋）**：`cameraSelector.ts`（釘選優先上限 4 支＋`level` 升冪＋距離排序＋離線自動遞補＋遮擋排除）、`spatialSorter.ts`（左右牆均衡切分與北→南排序）、`connectorGeometry.ts`（45° 戰術折線）、`urlSync.ts`（分享連結編解碼）。
+- **零重載影片牆（`DesktopVideoPool.tsx`）**：所有顯示中 `VideoCard` 維持於**單一扁平 React 清單（DOM 順序依 `cam.id` 字典序固定）**，透過 CSS `transform: translate3d(x,y,0)` 定位至左右牆格位，確保拖動地圖或跨牆換位時不觸發 `insertBefore` 與 YouTube iframe 重載。預設前 4 順位自動錯峰直播，其餘格位採縮圖延遲啟動（可切換全直播滿載）。
+- **SVG 座標與行動端契約**：`ConnectorOverlay.tsx` 以 `#connection-layer` 實際 `getBoundingClientRect()` 設定 `viewBox` 並減去 `svgRect.left`/`top`；手機版（`<= 1024px`）採滿版地圖＋三段式 `MobileBottomSheet.tsx`（同時最多自動播 2 支省電）。
+- **開發校正工具（`CalibrationDrawer.tsx`）**：採 `React.lazy` 動態載入，僅於 `?debug=calib` 或圖層面板入口載入；調整結果即時存 LocalStorage 並提供 JSON 複製。
+
+### 3. 已校正 CWA 氣象疊圖邊界（`DEFAULT_CALIBRATION_BOUNDS`）
+| 群組 | 對應 CWA 圖資 | 已校正邊界 `[[s, w], [n, e]]` |
+|---|---|---|
+| `radar` | 雷達回波 `CV1_TW_3600.png` | `[[20.455, 118.000], [26.480, 124.000]]` |
+| `rainfall` | 累積雨量 `QZJ.jpg` | `[[21.505, 119.195], [25.900, 123.575]]` |
+| `sat1350` | 衛星可見光／真實色 `1350` | `[[19.030, 115.925], [28.215, 126.070]]` |
+| `sat800` | 衛星彩色／色調強化／黑白 `800` | `[[19.050, 115.935], [28.195, 126.055]]` |
+| `sfc` | 地面等壓天氣圖 `SFCcombo.jpg` | `[[-0.340, 80.630], [56.690, 167.995]]` |
 
 ---
 
-## 三、建置、測試與部署實況（隨實況更新）
+## 二、外部資源與環境驗證台帳（2026-11-20 實測）
 
-- **建置指令**：無（現行純單檔 `index.html`；大改版進 `[build]` 後更新為 Vite 指令）。
-- **測試指令**：無（現行無自動測試框架；規劃中將導入 Vitest + Playwright）。
-- **部署流程**：`.github/workflows/static.yml` 監聽 `main` push，目前直接上傳 `.` 至 GitHub Pages；改版後將改為建置並上傳 `./dist`，且 Vite `base` 須設為 `'/taiwan_web_cam/'`。
-- **程式碼與文件慣例**：全專案採用 UTF-8 繁體中文；`README.md` 僅供人類閱讀不寫規劃待辦；非衰減事實一律寫本檔。
+| 對象 / 機制 | 實測結果 | 架構契約 / 踩坑結論 |
+|---|---|---|
+| **CartoDB Basemaps (`basemaps.cartocdn.com`)** | 雖回傳 `HTTP 200`，但**實機截圖揭露圖片已印上 `API KEY REQUIRED` 浮水印**（重大踩坑！） | **否決棄用**！全面改採下方經實圖檢視零浮水印之 Esri / NLSC 圖磚。 |
+| **Esri Dark Gray Base & World Imagery** | `World_Dark_Gray_Base`、`World_Imagery` 實圖檢視純淨無浮水印、`200 OK`、免 Key | 採用為預設「暗黑戰情」與「衛星實景」底圖。 |
+| **內政部國土測繪中心 `NLSC EMAP` & `EMAP2`** | 帶 GitHub Pages Referer 回 `200 OK`；`EMAP2` 實圖檢視為 RGBA 透明繁體中文縣市地名＋國道路網 | 採用 `EMAP` 為繁中底圖、`EMAP2` 為 Layer 5 置頂地名層。 |
+| **中央氣象署 8 張圖資 (`www.cwa.gov.tw/Data/...`)** | 瀏覽器直連 `200 OK` 但**無 `Access-Control-Allow-Origin` 標頭**；且 `CV1_TW_3600.png` 含不透明灰底 | 必須以 Leaflet DOM `<img>`（加 `referrerPolicy="no-referrer"`）疊圖，禁 WebGL 跨網域貼圖；預設雷達改採透明底 RainViewer，CWA 雷達保留於圖層面板（預設透明度 `0.38` 防泛白）。 |
+| **Open-Meteo API** | 多座標批次查詢 `200 OK`、CORS `*`、免 Key | 驅動動態風場 6×6 網格與每鏡頭即時風雨遙測，快取 10 分鐘。 |
+| **RainViewer API & Tilecache** | 過去 13 幀雷達路徑與 z6/z7 PNG 圖磚 `200 OK`、CORS `*`、背景全透明、免 Key | 作為預設 2 小時動態雨帶時間軸來源（`maxNativeZoom: 7`）。 |
+| **YouTube oEmbed (`scripts/check-webcams.mjs`)** | 實測 56/56 支鏡頭皆回傳 `HTTP 200`，耗時約 2 秒 | 搭配 `.github/workflows/webcam-health.yml` 每日自動巡檢輸出 `public/health.json`；執行期另由 YouTube Iframe API `onError` 遞補。 |
+| **Git Hooks & `.gitignore`** | `core.hooksPath=scripts/hooks`；`git check-ignore -v node_modules dist` 命中 `.gitignore` | 每次 commit 須同步更新 `LLM_MEMORY.md` 並守 §3 標籤，禁 `--no-verify`。 |
+
+---
+
+## 三、建置、測試與部署實況
+
+- **本地環境**：Node.js `v26.13.1` / npm `11.20.0`（位於 `/opt/homebrew/bin`）。
+- **常用指令**：
+  - 開發預覽：`npm run dev`
+  - 單元測試：`npm test`（Vitest，12 項核心測試）
+  - 生產建置：`npm run build`（`tsc --noEmit && vite build`，輸出 `./dist` 含 `dist/legacy.html`）
+  - 鏡頭巡檢：`npm run check:webcams`（更新 `public/health.json`）
+- **部署流程**：`.github/workflows/static.yml` 於 `main` push 自動執行 `npm ci → npm test → npm run build` 並將 `./dist` 部署至 GitHub Pages（Vite `base: '/taiwan_web_cam/'`）。
+- **慣例**：全專案採用 UTF-8 繁體中文；`README.md` 為人類向文件不寫規劃待辦。

@@ -4,65 +4,35 @@
 
 ## A. 目前狀態（每次交接必更新）
 
-- 目前階段: **[plan]**
-- 最後更新: 2026-11-20 09:21 / 當時階段: plan
-- 交接基準 commit: 86533ca [maintain] 依 §2.1 記錄使用者簽結並更新交接基準
-- 進行中任務: 路線 A「GitHub Free 炫砲颱風戰情室」大改版規劃（已寫入 B 區，待審閱與使用者拍板〈已定案〉）
-- 阻塞點: 待使用者審閱拍板 B 區規劃（確認可標記〈已定案〉並授權切換 `[build]`）
+- 目前階段: **[build]**
+- 最後更新: 2026-11-20 12:13 / 當時階段: build
+- 交接基準 commit: 0ee8a5a [plan] 補建 COMPONENT_MAP 並完成路線 A 炫砲戰情室大改版規劃
+- 進行中任務: v2 路線 A「GitHub Free 炫砲戰情室」Phase 1–4 全量建置與視覺驗收完成（等待審閱與使用者決定是否推送部署）
+- 阻塞點: 無
 
-> 長期架構、已校正氣象座標、外部資源實測台帳與建置部署實況已分流至 `COMPONENT_MAP.md`。
+> 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
 
 ---
 
-## B. 路線 A 大改版規劃（待定案 — 未標〈已定案〉前禁改程式碼）
+## B. 路線 A 大改版規劃（〈已定案〉 — v2 建置完成）
 
-### 1. 最高指導原則與核心情境
-- **零成本部署紅線**：100% 部署於 GitHub Free（GitHub Pages + GitHub Actions），零付費後端、零付費 API Key。
-- **核心情境**：颱風／豪雨時點開網頁即刻掌握全台風雨動態與即時現場鏡頭，體驗取向為 **「怎麼炫怎麼來」的次世代 Tactical Weather HUD 戰情室**，同時徹底根治舊版卡頓與難擴充問題。
-
-### 2. 推薦技術棧（100% 靜態打包部署至 GitHub Pages）
-- **核心架構**：Vite + React 19 + TypeScript (Strict) + Tailwind CSS + Zustand（含 LocalStorage 持久化）+ Lucide Icons。
-- **地圖引擎**：Leaflet 1.9.4（`preferCanvas: true`）+ CartoDB Dark Matter 底圖（保留切換底圖介面）。採 Leaflet 主因實測 CWA 8 圖資無 CORS 標頭（詳 `COMPONENT_MAP.md`），DOM `<img>` 可零 Proxy 直連並無痛延續 5 組已校正座標；另封裝 `MapAdapter` 介面預留擴充。
-- **測試與 CI/CD**：Vitest（核心演算法單元測試）+ Playwright（桌機/手機 RWD 與連線回歸測試）；`.github/workflows/static.yml` 升級為自動建置並部署 `./dist`（Vite 設定 `base: '/taiwan_web_cam/'`）。
-
-### 3. 五大炫砲戰情核心亮點（全部依實測免費端點設計）
-1. **🌪️ Windy 風格動態風場粒子流線層（Animated Wind Flow Canvas）**：
-   - 以 Open-Meteo 免費批次 API（實測 CORS `*`）每 10 分鐘查詢台灣周邊 6×6 網格風速／風向，於 Leaflet 上疊加輕量 Canvas 2D 雙線性內插動態風場粒子流線（依風速從青→黃→橘紅→紫漸變；支援一鍵開關與密度切換），颱風逼近時可直觀看到氣旋流動。
-2. **🎬 雙軌氣象圖層系統：2 小時動態雷達時間軸 ＋ CWA 官方高解析 8 圖層多疊加**：
-   - **動態軌跡**：整合 RainViewer 公開雷達圖磚（實測過去 13 幀、CORS `*`、`maxNativeZoom: 7`），內建底部精簡時間軸播放／暫停／拖曳看雨帶移動。
-   - **官方高解析疊圖**：保留原本 CWA 8 圖層（雷達／累積雨量／5 衛星／地面等壓圖），升級為**支援多圖層同時疊加、獨立透明度滑桿、Lazy Load、10 分鐘雙緩衝無感自動刷新（不閃白）、`referrerPolicy="no-referrer"`、附 dBZ/雨量色階圖例**。
-3. **⚡ 45° 戰術脈衝雷射導引線 ＋ 聲納目標鎖定環**：
-   - 以固定節點復用 SVG（`setAttribute` 更新＋`rAF` 節流，拿掉昂貴 `drop-shadow`）繪製 **45° 戰術折線（Tactical Elbow）** 與 CSS `stroke-dashoffset` 流動光點脈衝。
-   - 影片卡片與地圖標記雙向 Hover 鎖定：高亮對應連線與地圖**聲納擴散鎖定環（Sonar Pulse Ring）**，其餘連線優雅退暗。
-4. **📊 鏡頭即時風雨遙測角標 ＋ Kiosk 壁掛指揮模式**：
-   - Open-Meteo 單次批次查顯示中鏡頭座標，於卡片角標顯示即時氣溫、風速／陣風（強陣風自動亮琥珀／紅警示）、降雨量。
-   - 頂部 Tactical HUD 提供：台北即時戰情時鐘、地名/縣市搜尋、**颱風情境快捷篩選（🌊 沿海風浪／🏔️ 山區水庫／🌧️ 都會路況／🏝️ 離島／📌 只看釘選）**、URL 視角配置一鍵分享，以及 **Kiosk 壁掛純享模式**（一鍵隱藏控制列，適合掛副螢幕或大電視）。
-5. **🚀 零重載高效能引擎 ＋ 雙層防黑屏 ＋ 手機版全新重做**：
-   - **Keyed Zero-Reload 影片牆**：以 `cam.id`/`videoId` 為穩定 Key，配合 250ms 拖曳防抖，留任直播 0 重載；預設 **4 格活體直播＋縮圖點擊即播（Facade Pattern）**，一鍵切換 `4 / 6 / 8 格滿載` 與 150ms 錯峰掛載；每卡支援 **釘選 Pin（上限 4 支不被拖曳洗掉）、劇院大畫面 Focus、地圖平滑飛至定位**。
-   - **雙層防黑屏**：前端接入 YouTube Iframe Player API 監聽 `onError` 自動切換備援 ID 或遞補下一順位；另設 GitHub Actions（`webcam-health.yml`）每日執行 `scripts/check-webcams.mjs` 產出 `public/health.json`。
-   - **手機版重做（<= 1024px）**：廢除 `6px` 小字與夾心餅，改為「**滿版地圖 ＋ 底部三段式可滑動 Bottom Sheet**」（收合純看圖／半開橫滑卡片且最多同時播 2 支省電／全開搜尋與圖層控制）。
-
-### 4. 目錄結構與資料 Schema
-- `src/data/webcams.json`：完整遷移既有 52 支鏡頭，新增 `id`、`region`、`county`、`tags`、`stream: { provider: 'youtube', videoId, backupVideoIds }`（預留未來接 `hls`/`mjpeg` 公路局介面）。
-- `src/data/weatherLayers.ts`：集中管理 CWA 8 圖層 URL、5 組校正邊界與圖例定義。
-- `src/core/`：`cameraSelector.ts`、`spatialSorter.ts`、`urlSync.ts`（純函式 100% 單元測試）。
-- `src/services/`：`youtubeApi.ts`、`openMeteo.ts`、`rainViewer.ts`、`weatherRefresher.ts`。
-- `src/components/dev/CalibrationDrawer.tsx`：僅於 `?debug=calib` 或進階選單動態 Lazy Load，保留 5 組邊界校正與 JSON 複製。
-
-### 5. 四階段落地里程碑（核准切 `[build]` 後執行）
-- **Phase 1（骨架與資料遷移）**：初始化 Vite + React 19 + TS + Tailwind 專案、遷移 52 筆 `webcams.json` 與 `core/` 純演算法＋Vitest 單元測試、升級 `.github/workflows/static.yml` 支援自動打包部署。
-- **Phase 2（地圖、雙軌氣象、動態風場與零重載引擎）**：實作 Leaflet Canvas 地圖、CWA 多圖層疊加與雙緩衝刷新、RainViewer 2 小時時間軸、Open-Meteo 動態風場流線 Canvas、Keyed Zero-Reload 影片牆、45° 脈衝雷射線＋聲納鎖定、YouTube API `onError` 遞補。
-- **Phase 3（戰情 HUD、遙測、Kiosk 與手機 Bottom Sheet）**：完成頂部 HUD 搜尋／情境快捷鍵、釘選 Pin、劇院大畫面、卡片即時風雨遙測角標、Kiosk 模式、LocalStorage 偏好與 URL 分享、手機版三段式 Bottom Sheet。
-- **Phase 4（校正工具、自動巡檢與驗收）**：Lazy-load 校正抽屜、GitHub Actions 每日鏡頭巡檢腳本、Playwright 桌機/手機冒煙測試、清理舊單檔與更新 `COMPONENT_MAP.md`／`README.md`。
-
-### 6. 標記〈已定案〉前待使用者確認（有預設推薦值）
-1. 框架：預設 **React 19 + TS**（或改 Vue 3）。
-2. 首屏預設直播格數：預設 **4 格活體＋其餘縮圖點即播（可一鍵切 6/8 格）**（或改預設 8 格全播）。
-3. 確認納入 **Windy 動態風場流線＋RainViewer 2 小時動態雷達＋GitHub Actions 每日鏡頭巡檢**。
+- **定案授權**：使用者於 `2026-11-20 11:52` 親自簽結 `0ee8a5a`，核准納入「3 張免費底圖切換＋6 層戰情三明治＋保留舊版 `public/legacy.html`」，並授權標記〈已定案〉切換 `[build]` 開工。
+- **里程碑完成進度**：
+  - [x] **Phase 1**：Vite 6 + React 19 + TS + Tailwind v4 + Zustand 初始化；56 支鏡頭完整遷移 `src/data/webcams.json`（與 `public/legacy.html` 100% 吻合）；`src/core/` 純演算法＋Vitest 12 項單元測試通過；升級 `.github/workflows/static.yml`。
+  - [x] **Phase 2**：6 層戰情三明治 Leaflet 地圖（實圖驗收改採零浮水印 Esri Dark/Imagery＋國土測繪中心 NLSC EMAP/EMAP2 繁中置頂地名）；RainViewer 2 小時動態雨帶時間軸＋CWA 8 圖層多疊加／發光濾色／10 分鐘雙緩衝刷新；Open-Meteo 動態風場粒子流線；單一扁平 Keyed 零重載影片牆；45° 脈衝雷射線＋聲納鎖定環；YouTube Iframe API `onError` 遞補。
+  - [x] **Phase 3**：頂部 Tactical HUD（台北時鐘、搜尋、颱風情境快捷、4/6/8 格與省電切換、釘選 Pin、劇院大畫面、即時風雨遙測角標、Kiosk 壁掛模式、URL 分享、舊版連結）；手機版三段式 Bottom Sheet。
+  - [x] **Phase 4**：Lazy-load `?debug=calib` 校正抽屜、`scripts/check-webcams.mjs` 與 `.github/workflows/webcam-health.yml` 每日巡檢、無頭 Chrome 桌機與行動端視覺實測驗證、`README.md` 與 `COMPONENT_MAP.md` 同步更新。
 
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-20 12:13 [build] 使用工具: Antigravity
+
+- 完成了什麼: 使用者於 `2026-11-20 11:52` 簽結 `0ee8a5a`、定案並切 `[build]`（保留舊版），已覆蓋基準為 `0ee8a5a` 並完成 v2 路線 A Phase 1–4 全量建置（原單檔保存於 `public/legacy.html`）。為何改：升級高效能 100% GitHub Free 颱風戰情室（細節與 Carto 浮水印踩坑詳 `COMPONENT_MAP.md`）。
+- 驗證方式: `npm test` 12/12 過；`npm run build`（`tsc` + Vite 611ms）含 `dist/legacy.html`；`npm run check:webcams` 56/56 `200 OK`；`git check-ignore -v node_modules dist` 命中；Chrome 1440×900/520×844 實機截圖驗收無浮水印與排版正常。
+- 下一個 agent 該做什麼: 本次改動需要審閱：核對 `0ee8a5a..HEAD` v2 結構、56 筆 `webcams.json` 與 `legacy.html` 一致性、CI workflow 與 `COMPONENT_MAP.md`。等待 `new session`／新工具審閱（或使用者簽結後決定是否 `git push`）。
+- 地雷警告: Node 在 `/opt/homebrew/bin`；禁未指示 `git push`；CartoDB 圖磚已有浮水印切勿切回。
 
 ### 2026-11-20 09:21 [plan] 使用工具: Antigravity
 

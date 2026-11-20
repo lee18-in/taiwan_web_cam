@@ -1,0 +1,193 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #060b16;
+    color: #e2e8f0;
+    font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+}
+
+.font-mono-tech {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+/* === Tactical Glass & HUD === */
+.hud-glass {
+  background: rgba(8, 15, 29, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(148, 163, 184, 0.1);
+}
+
+.hud-glass-strong {
+  background: rgba(6, 12, 24, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(56, 189, 248, 0.14);
+}
+
+/* === Tactical Laser Connector Animations === */
+@keyframes tactical-flow {
+  from {
+    stroke-dashoffset: 36;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.connector-pulse-line {
+  stroke-dasharray: 8 10;
+  animation: tactical-flow 1.4s linear infinite;
+}
+
+.connector-pulse-line-fast {
+  stroke-dasharray: 10 8;
+  animation: tactical-flow 0.65s linear infinite;
+}
+
+/* === Map Active Marker & Sonar Pulse Ring === */
+@keyframes sonar-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.8);
+    opacity: 0;
+  }
+}
+
+.warroom-marker-wrap {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.warroom-marker-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  background: #22d3ee;
+  border: 2px solid #06101f;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.9);
+  transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+.warroom-marker-wrap.is-pinned .warroom-marker-core {
+  background: #f59e0b;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.95);
+}
+
+.warroom-marker-wrap.is-hovered .warroom-marker-core {
+  transform: translate(-50%, -50%) scale(1.35);
+  background: #67e8f9;
+}
+
+.warroom-marker-sonar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 2px solid rgba(34, 211, 238, 0.85);
+  animation: sonar-ring 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  pointer-events: none;
+}
+
+.warroom-marker-wrap.is-pinned .warroom-marker-sonar {
+  border-color: rgba(245, 158, 11, 0.9);
+}
+
+.warroom-marker-wrap.is-hovered .warroom-marker-sonar {
+  animation-duration: 0.95s;
+  border-width: 2.5px;
+}
+
+/* === Leaflet Dark Tactical Theme Overrides === */
+.leaflet-container {
+  background: #060b16 !important;
+  font-family: 'Noto Sans TC', system-ui, sans-serif !important;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(8, 15, 29, 0.85) !important;
+  color: #cbd5e1 !important;
+  border-bottom-color: rgba(56, 189, 248, 0.18) !important;
+  backdrop-filter: blur(8px);
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(30, 41, 59, 0.95) !important;
+  color: #38bdf8 !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(6, 11, 22, 0.62) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+  backdrop-filter: blur(6px);
+  border-top-left-radius: 6px;
+}
+
+.leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}
+
+.warroom-tooltip.leaflet-tooltip {
+  background: rgba(6, 12, 24, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+
+.warroom-tooltip.leaflet-tooltip-top::before {
+  border-top-color: rgba(56, 189, 248, 0.45);
+}
+
+/* Custom thin dark scrollbars */
+.thin-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.28);
+  border-radius: 9999px;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.5);
+}
