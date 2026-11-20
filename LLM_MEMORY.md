@@ -5,9 +5,9 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-20 14:12 / 當時階段: build
-- 交接基準 commit: 0ee8a5a [plan] 補建 COMPONENT_MAP 並完成路線 A 炫砲戰情室大改版規劃
-- 進行中任務: v2 極簡單選氣象列＋風場瘦身＋拖曳縮放記憶體洩漏／卡死 4 項根因修復已推送上線，待使用者實測與審閱結案
+- 最後更新: 2026-11-20 16:29 / 當時階段: build
+- 交接基準 commit: 3de418e [build] 修復縮放拖拉記憶體洩漏與頁面向前凍結之四項根因
+- 進行中任務: `0ee8a5a..3de418e` v2 重構、極簡單選氣象列、風場瘦身與 4 項記憶體／凍屏修復已審閱與實測通過，待使用者確認結案或交付新需求
 - 阻塞點: 無
 
 > 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
@@ -24,6 +24,13 @@
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-20 16:29 [build] 使用工具: Antigravity
+
+- 完成了什麼: 依 §2.1 完成 `0ee8a5a..3de418e` 批次審閱與獨立實測：確認架構符合 `COMPONENT_MAP.md`、單選互斥與風場查表及 4 項防凍屏紅線（RainViewer `<=2` 層、無根元件 `move`/`zoom` `setState`、750ms 防抖＋`about:blank` 卸載、圖磚 `updateWhenZooming: false`）全數落實，`public/legacy.html` 與 `webcams.json` 56 筆 100% 一致；已覆蓋交接基準為 `3de418e`。
+- 驗證方式: `npm test` 12/12 過；`npm run build` 610ms 零錯（含 `dist/legacy.html` 51K）；`diff` 比對 `0ee8a5a:index.html` 與 `public/legacy.html` 零差異、`webcams.json` 56/56 吻合；`git check-ignore -v node_modules dist` 命中；`vite preview` + Headless Chrome 實測桌機(1440×900)與手機(390×844)零 JS 例外、單選切換正確、縮放壓測後 RainViewer `2` 層／圖磚 `84` 張／iframe `4` 個、`?debug=calib` 與 `/legacy.html` HTTP 200 正常。
+- 下一個 agent 該做什麼: 無（待使用者確認結案或交付新需求；可順手留意 `ConnectorOverlay` 若初始 `slots` 為 0 才掛載地圖之邊角情況）。
+- 地雷警告: 無（維持禁在 `<App />` 綁 `move`/`zoom` `setState` 與累積 >2 層 RainViewer）。
 
 ### 2026-11-20 14:12 [build] 使用工具: Antigravity
 
