@@ -4,102 +4,72 @@
 
 ## A. 目前狀態（每次交接必更新）
 
-- 目前階段: **[build]**
-- 最後更新: 2026-11-18 19:39 / 當時階段: maintain
-- 交接基準 commit: 2f921c1 [maintain] 升級 AI agent 工作流憲法至 Online v13
-- 進行中任務: 等待下一項工作宣告（Playbook v2 導入已完成）
-- 阻塞點: 無
+- 目前階段: **[plan]**
+- 最後更新: 2026-11-20 09:21 / 當時階段: plan
+- 交接基準 commit: 86533ca [maintain] 依 §2.1 記錄使用者簽結並更新交接基準
+- 進行中任務: 路線 A「GitHub Free 炫砲颱風戰情室」大改版規劃（已寫入 B 區，待審閱與使用者拍板〈已定案〉）
+- 阻塞點: 待使用者審閱拍板 B 區規劃（確認可標記〈已定案〉並授權切換 `[build]`）
+
+> 長期架構、已校正氣象座標、外部資源實測台帳與建置部署實況已分流至 `COMPONENT_MAP.md`。
 
 ---
 
-## 📌 專案基本資訊
-- **專案名稱**：台灣即時影像戰情室 (Taiwan Web Cam War Room)
-- **Repo 網址**：https://github.com/lee18-in/taiwan_web_cam
-- **Live Demo**：https://lee18-in.github.io/taiwan_web_cam/
-- **核心技術**：原生 HTML / CSS / Vanilla JavaScript (無額外構建步驟，單一 HTML 檔案運作)
-- **第三方套件**：
-  - **Leaflet.js** (地圖呈現與標記管理)
-  - **CartoDB Dark Matter** (戰情室暗色風格底圖)
-  - **YouTube Iframe API** (即時串流影片嵌入與自動播放)
+## B. 路線 A 大改版規劃（待定案 — 未標〈已定案〉前禁改程式碼）
 
----
+### 1. 最高指導原則與核心情境
+- **零成本部署紅線**：100% 部署於 GitHub Free（GitHub Pages + GitHub Actions），零付費後端、零付費 API Key。
+- **核心情境**：颱風／豪雨時點開網頁即刻掌握全台風雨動態與即時現場鏡頭，體驗取向為 **「怎麼炫怎麼來」的次世代 Tactical Weather HUD 戰情室**，同時徹底根治舊版卡頓與難擴充問題。
 
-## 🗺️ 系統架構與關鍵邏輯
+### 2. 推薦技術棧（100% 靜態打包部署至 GitHub Pages）
+- **核心架構**：Vite + React 19 + TypeScript (Strict) + Tailwind CSS + Zustand（含 LocalStorage 持久化）+ Lucide Icons。
+- **地圖引擎**：Leaflet 1.9.4（`preferCanvas: true`）+ CartoDB Dark Matter 底圖（保留切換底圖介面）。採 Leaflet 主因實測 CWA 8 圖資無 CORS 標頭（詳 `COMPONENT_MAP.md`），DOM `<img>` 可零 Proxy 直連並無痛延續 5 組已校正座標；另封裝 `MapAdapter` 介面預留擴充。
+- **測試與 CI/CD**：Vitest（核心演算法單元測試）+ Playwright（桌機/手機 RWD 與連線回歸測試）；`.github/workflows/static.yml` 升級為自動建置並部署 `./dist`（Vite 設定 `base: '/taiwan_web_cam/'`）。
 
-### 1. 單一檔案結構 (Single-File Architecture)
-整個專案主要邏輯與介面皆在 [index.html](file:///home/winbug3/文件/github/taiwan_web_cam/index.html) 中實作：
-- **HTML/CSS**：定義了地圖容器、兩側的影片牆 (`.video-wall-left`, `.video-wall-right`)、連線 SVG 畫布 (`#connection-layer`)、氣象疊圖按鈕控制面板 (`#footer-links`)，以及疊圖校正工具 (`#calibration-tool`)。
-- **JavaScript**：負責地圖初始化、氣象疊圖加載/切換/校正、攝影機資料庫篩選、影片牆渲染與 SVG 連線動態計算。
+### 3. 五大炫砲戰情核心亮點（全部依實測免費端點設計）
+1. **🌪️ Windy 風格動態風場粒子流線層（Animated Wind Flow Canvas）**：
+   - 以 Open-Meteo 免費批次 API（實測 CORS `*`）每 10 分鐘查詢台灣周邊 6×6 網格風速／風向，於 Leaflet 上疊加輕量 Canvas 2D 雙線性內插動態風場粒子流線（依風速從青→黃→橘紅→紫漸變；支援一鍵開關與密度切換），颱風逼近時可直觀看到氣旋流動。
+2. **🎬 雙軌氣象圖層系統：2 小時動態雷達時間軸 ＋ CWA 官方高解析 8 圖層多疊加**：
+   - **動態軌跡**：整合 RainViewer 公開雷達圖磚（實測過去 13 幀、CORS `*`、`maxNativeZoom: 7`），內建底部精簡時間軸播放／暫停／拖曳看雨帶移動。
+   - **官方高解析疊圖**：保留原本 CWA 8 圖層（雷達／累積雨量／5 衛星／地面等壓圖），升級為**支援多圖層同時疊加、獨立透明度滑桿、Lazy Load、10 分鐘雙緩衝無感自動刷新（不閃白）、`referrerPolicy="no-referrer"`、附 dBZ/雨量色階圖例**。
+3. **⚡ 45° 戰術脈衝雷射導引線 ＋ 聲納目標鎖定環**：
+   - 以固定節點復用 SVG（`setAttribute` 更新＋`rAF` 節流，拿掉昂貴 `drop-shadow`）繪製 **45° 戰術折線（Tactical Elbow）** 與 CSS `stroke-dashoffset` 流動光點脈衝。
+   - 影片卡片與地圖標記雙向 Hover 鎖定：高亮對應連線與地圖**聲納擴散鎖定環（Sonar Pulse Ring）**，其餘連線優雅退暗。
+4. **📊 鏡頭即時風雨遙測角標 ＋ Kiosk 壁掛指揮模式**：
+   - Open-Meteo 單次批次查顯示中鏡頭座標，於卡片角標顯示即時氣溫、風速／陣風（強陣風自動亮琥珀／紅警示）、降雨量。
+   - 頂部 Tactical HUD 提供：台北即時戰情時鐘、地名/縣市搜尋、**颱風情境快捷篩選（🌊 沿海風浪／🏔️ 山區水庫／🌧️ 都會路況／🏝️ 離島／📌 只看釘選）**、URL 視角配置一鍵分享，以及 **Kiosk 壁掛純享模式**（一鍵隱藏控制列，適合掛副螢幕或大電視）。
+5. **🚀 零重載高效能引擎 ＋ 雙層防黑屏 ＋ 手機版全新重做**：
+   - **Keyed Zero-Reload 影片牆**：以 `cam.id`/`videoId` 為穩定 Key，配合 250ms 拖曳防抖，留任直播 0 重載；預設 **4 格活體直播＋縮圖點擊即播（Facade Pattern）**，一鍵切換 `4 / 6 / 8 格滿載` 與 150ms 錯峰掛載；每卡支援 **釘選 Pin（上限 4 支不被拖曳洗掉）、劇院大畫面 Focus、地圖平滑飛至定位**。
+   - **雙層防黑屏**：前端接入 YouTube Iframe Player API 監聽 `onError` 自動切換備援 ID 或遞補下一順位；另設 GitHub Actions（`webcam-health.yml`）每日執行 `scripts/check-webcams.mjs` 產出 `public/health.json`。
+   - **手機版重做（<= 1024px）**：廢除 `6px` 小字與夾心餅，改為「**滿版地圖 ＋ 底部三段式可滑動 Bottom Sheet**」（收合純看圖／半開橫滑卡片且最多同時播 2 支省電／全開搜尋與圖層控制）。
 
-### 2. 攝影機篩選與排版邏輯
-- **資料定義**：在 `webcams` 陣列中定義，每個攝影機具有：
-  - `level` (0-4，數字越小優先權越高，決定影片牆不足時的顯示順序)
-  - `videoId` (YouTube 直播 ID)
-  - `lat`, `lng` (經緯度)
-  - `name` (名稱)
-- **動態影片牆**：
-  - **電腦版 (正常解析度 > 1024px)**：最多顯示 8 個影片，分置於左側與右側。影片牆寬度會根據當前顯示的影片數動態計算，並會將地圖的原生控制元件（如縮放按鈕、版權宣告）以及底部的按鈕面板向內推移，避免被遮擋。
-  - **手機/平板/低解析度版 (<= 1024px)**：最多顯示 4 個影片，分別放置在畫面的最上方 (前 2 個) 與最下方 (後 2 個)，形成「上二、下二」的配置，而 Leaflet 地圖被夾在中間（Sandwich Layout）。在分發至上下影片牆前，會先將相機清單進行地理空間排序（緯度由北到南劃分上下兩組，再以經度由西到東排定左右順序），以確保視訊分割與地圖地標的對應指引線不會產生交錯。
-- **雷射連線指示器 (SVG Connector Line)**：
-  - 透過 `renderConnectorLines()` 動態計算影片牆卡片的邊緣中點，與該標記在地圖上的實際螢幕座標點 (`map.latLngToContainerPoint`)，並利用 SVG `<line>` 與 `<circle>` 繪製虛線連線，營造戰情室科技感。
-  - 手機/低解析度版時，雷射連線會自動判斷地標相對於影片卡片的位置，自動從影片卡片的下方 (指引向下方地圖) 或上方 (指引向上方地圖) 射出。
+### 4. 目錄結構與資料 Schema
+- `src/data/webcams.json`：完整遷移既有 52 支鏡頭，新增 `id`、`region`、`county`、`tags`、`stream: { provider: 'youtube', videoId, backupVideoIds }`（預留未來接 `hls`/`mjpeg` 公路局介面）。
+- `src/data/weatherLayers.ts`：集中管理 CWA 8 圖層 URL、5 組校正邊界與圖例定義。
+- `src/core/`：`cameraSelector.ts`、`spatialSorter.ts`、`urlSync.ts`（純函式 100% 單元測試）。
+- `src/services/`：`youtubeApi.ts`、`openMeteo.ts`、`rainViewer.ts`、`weatherRefresher.ts`。
+- `src/components/dev/CalibrationDrawer.tsx`：僅於 `?debug=calib` 或進階選單動態 Lazy Load，保留 5 組邊界校正與 JSON 複製。
 
-### 3. 七合一氣象疊圖系統與校正工具
-整合交通部中央氣象署 (CWA) 資源，提供以下圖層切換：
-1. 📡 **雷達回波圖** (預設開啟)
-2. 🌧️ **累積雨量圖**
-3. ☀️ **可見光衛星雲圖**
-4. 🌍 **真實色衛星雲圖**
-5. 🎨 **彩色紅外線衛星雲圖**
-6. 🌓 **色調強化衛星雲圖**
-7. ⬛ **黑白紅外線衛星雲圖**
-8. 🌀 **地面等壓天氣圖**
+### 5. 四階段落地里程碑（核准切 `[build]` 後執行）
+- **Phase 1（骨架與資料遷移）**：初始化 Vite + React 19 + TS + Tailwind 專案、遷移 52 筆 `webcams.json` 與 `core/` 純演算法＋Vitest 單元測試、升級 `.github/workflows/static.yml` 支援自動打包部署。
+- **Phase 2（地圖、雙軌氣象、動態風場與零重載引擎）**：實作 Leaflet Canvas 地圖、CWA 多圖層疊加與雙緩衝刷新、RainViewer 2 小時時間軸、Open-Meteo 動態風場流線 Canvas、Keyed Zero-Reload 影片牆、45° 脈衝雷射線＋聲納鎖定、YouTube API `onError` 遞補。
+- **Phase 3（戰情 HUD、遙測、Kiosk 與手機 Bottom Sheet）**：完成頂部 HUD 搜尋／情境快捷鍵、釘選 Pin、劇院大畫面、卡片即時風雨遙測角標、Kiosk 模式、LocalStorage 偏好與 URL 分享、手機版三段式 Bottom Sheet。
+- **Phase 4（校正工具、自動巡檢與驗收）**：Lazy-load 校正抽屜、GitHub Actions 每日鏡頭巡檢腳本、Playwright 桌機/手機冒煙測試、清理舊單檔與更新 `COMPONENT_MAP.md`／`README.md`。
 
-#### 🔧 開發者校正工具 (Calibration Tool)
-- 點擊地圖右下角 Leaflet 版權欄位中的 ⚙️ 按鈕可開啟隱藏的「疊圖校正工具」。
-- 提供北、南、西、東的經緯度滑軌（Range Slider），拖動時會即時更新對應圖層的 Leaflet `ImageOverlay` 邊界（Bounds）。
-- 自動生成 JSON 格式的代碼陣列（例如 `[[s, w], [n, e]]`），方便開發者直接複製並貼回程式碼的 `satBoundsGroup` 中。
-
-### 4. 座標指引線定位機制 (SVG Connector Offset Fix)
-- **問題現象**：在低解析度或行動裝置瀏覽器下，雷射指引線與地標位置會產生偏移。
-- **根本原因**：
-  1. 行動裝置下瀏覽器 UI（如網址列）動態顯示/隱藏導致 CSS 的 `100vh` 與 JS 的 `window.innerHeight` 不一致，而 SVG 之前是使用 `window.innerWidth`/`innerHeight` 作為 viewBox，導致畫布縮放拉伸。
-  2. 地圖容器 `#map` 的尺寸與位置在行動裝置版動態變更（如因為上方的影片牆高度改變），但 Leaflet 的內部尺寸快取未同步更新，導致 `latLngToContainerPoint` 計算出過時的座標。
-- **解決方案**：
-  1. 動態獲取 `#connection-layer` (SVG) 的 `getBoundingClientRect()` 作為基準，並將其 `viewBox` 設定為實際的渲染寬高（`0 0 svgRect.width svgRect.height`）。
-  2. 將計算出的螢幕 client 座標（如影片邊緣或地圖標記座標）減去 `svgRect.left` 和 `svgRect.top`，完美映射至 SVG 內部座標系，對抗所有因視窗捲動或定位產生的位移。
-  3. 將地圖定位重構為統一的 `updateMapPosition()`，在每次更新地圖樣式（不論是手機版或桌機版）後，立即呼叫 `map.invalidateSize({ animate: false })` 強制 Leaflet 刷新容器大小快取。
-
----
-
-## 🛠️ 當前已實作功能
-- [x] 基礎地圖初始化與 CartoDB 暗黑主題。
-- [x] 根據地圖可視範圍與 `level` 優先度篩選並動態載入 YouTube 影片。
-- [x] 自動記憶與避免重複渲染（若視角變化但顯示清單不變，不重新加載 iframe 避免斷流）。
-- [x] SVG 科技感雷射連線。
-- [x] 多種氣象雲圖疊加與切換。
-- [x] 即時疊圖邊界校正工具（包含 SFC 等壓圖、雨量圖、雷達圖與兩種不同解析度衛星圖的專屬滑軌範圍限制）。
-
----
-
-## ⚠️ 已知限制與開發注意事項
-1. **YouTube 串流失效風險**：
-   - 即時影像的 YouTube `videoId` 有可能因原轉播單位重開直播而變更。需定期檢查 `webcams` 陣列中的影片 ID 是否有效。
-2. **網頁快取問題**：
-   - 氣象圖層的圖片網址後方皆有加上時間戳記 `?t=new Date().getTime()`，以避免瀏覽器快取過期的氣象資訊。
-3. **無構建系統**：
-   - 本專案完全基於單一 HTML 檔案，所有的樣式與指令碼都在 `index.html` 中。修改程式碼時請確保不會破壞既有的純網頁架構（除非後續有重構為 React/Vite 等框架的需求）。
-
----
-
-## 🚀 後續規劃與待辦事項 (Roadmap)
-- [ ] **使用者偏好儲存**：實作「鏡頭優先等級」或「自訂顯示清單」面板，並結合 LocalStorage 儲存使用者設定。
-- [ ] **更多即時資訊疊加**：加入國道時速壅塞圖層、累積雨量具體數值標記等。
-- [ ] **YouTube API 錯誤處理**：在 Iframe 載入失敗或直播已結束時，顯示友善的替代畫面或自動替換其他備份攝影機。
+### 6. 標記〈已定案〉前待使用者確認（有預設推薦值）
+1. 框架：預設 **React 19 + TS**（或改 Vue 3）。
+2. 首屏預設直播格數：預設 **4 格活體＋其餘縮圖點即播（可一鍵切 6/8 格）**（或改預設 8 格全播）。
+3. 確認納入 **Windy 動態風場流線＋RainViewer 2 小時動態雷達＋GitHub Actions 每日鏡頭巡檢**。
 
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-20 09:21 [plan] 使用工具: Antigravity
+
+- 完成了什麼: 依使用者指示切至 `[plan]`，補建 `COMPONENT_MAP.md` 遷移非衰減事實與外部資源實測台帳，並於 B 區完成「100% GitHub Free 炫砲颱風戰情室（路線 A）」完整規劃（待定案）。為何改：啟動大改版規劃並落實 Online v13 三檔分流（實測與決策依據見 `COMPONENT_MAP.md`）。
+- 驗證方式: `git config --get core.hooksPath`=`scripts/hooks`；`curl -sI` 實測 CWA 8 圖 `200 OK` 無 CORS、Open-Meteo 與 RainViewer `200 OK` 且 CORS `*`、YouTube oEmbed `200 OK`；`COMPONENT_MAP.md` < 16 KB、C 區 < 10 KB；未改程式碼。
+- 下一個 agent 該做什麼: 本次改動需要審閱：核對 `COMPONENT_MAP.md` 僅含已驗證事實且無漏遷、確認 `LLM_MEMORY.md` B 區規劃符合 GitHub Free 紅線與憲法規範且未誤改程式碼。等待 `new session`／新工具審閱，並待使用者確認 B 區待決項標記〈已定案〉與切換 `[build]` 後開工。
+- 地雷警告: CWA 圖資無 CORS 標頭禁以 WebGL 跨網域貼圖直連；B 區未標〈已定案〉前嚴禁動碼。
 
 ### 2026-11-18 19:39 [maintain] 使用工具: Antigravity
 
@@ -150,12 +120,4 @@
 
 ---
 
-## E. 專案技術脈絡(依專案填寫,agent 得隨專案實況更新,保持精簡)
-
-- 建置指令: 無（純 HTML/CSS/JavaScript，單一 index.html，無構建步驟）
-- 測試指令: 無（目前無自動測試框架）
-- 程式碼慣例:
-  - 原生 HTML/CSS/JavaScript（不使用框架）
-  - 所有邏輯在單一 index.html 中實作
-  - 依賴：Leaflet.js (地圖)、CartoDB (底圖)、YouTube Iframe API (影音)
-  - 遵循既有的「單一檔案」架構，不引入新的構建工具
+> 專案技術脈絡（建置、測試、部署與程式碼慣例）依 `AGENTS.md` §5 統一維護於 `COMPONENT_MAP.md`。
