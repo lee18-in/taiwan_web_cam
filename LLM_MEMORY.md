@@ -5,8 +5,8 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-20 16:29 / 當時階段: build
-- 交接基準 commit: 3de418e [build] 修復縮放拖拉記憶體洩漏與頁面向前凍結之四項根因
+- 最後更新: 2026-11-24 14:07 / 當時階段: maintain
+- 交接基準 commit: e5960d7 [maintain] 自動巡檢更新鏡頭健康狀態
 - 進行中任務: `0ee8a5a..3de418e` v2 重構、極簡單選氣象列、風場瘦身與 4 項記憶體／凍屏修復已審閱與實測通過，待使用者確認結案或交付新需求
 - 阻塞點: 無
 
@@ -24,6 +24,13 @@
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-24 14:07 [maintain] 使用工具: Antigravity (Gemini 4 Neon)
+
+- 完成了什麼: 依使用者「12全區佈署」指示將本目錄 `AGENTS.md` 自 Online v13 整份覆蓋升級至 v14（無模板外自訂規則；覆蓋前 hash `2f921c1`）；依 §0 將 2026-07-06～10-22 四筆純工作流升級舊日誌壓縮入 D 區使 C 區低於 10 KB；無待審已覆蓋交接基準為 `e5960d7`。為何改：全 12 倉同步 Online v14 憲法。
+- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 14` 與 `Playbook-Variant: online`，全文 `10,191 B`/89 行與 `Andy_AI_AGENT_WorkFlow/AGENTS.md` 逐位元組一致。
+- 下一個 agent 該做什麼: 本次改動需要審閱：對照 Online v14 模板確認條文一致且 A 區進行中任務未遭改寫與舊日誌壓縮無遺失。等待 `new session`（或 `/clear` 清空 `context`，建議換模型）審閱。
+- 地雷警告: 未 push；依 §2.1 本 `context` 禁自審。
 
 ### 2026-11-20 16:29 [build] 使用工具: Antigravity
 
@@ -75,31 +82,13 @@
 - 地雷警告: 無
 
 
-### 2026-10-22 11:15 [maintain] 使用工具: Cursor Auto
+## D. 已封存結論（自〈交接日誌〉壓縮搬入，唯讀）
 
-- 完成了什麼: 依 AI_AGENT_Playbook_Online.md 將本目錄 AGENTS.md 自 v10 整份覆蓋升級至 v11（online）。覆蓋前 AGENTS.md hash: 8e6860a（可用 `git show .md` 找回）。v11 重點：§0 接手環境自檢／驗證方式必填／待審下壓保護；§2.1 使用者簽結與批次審閱。
-- 驗證方式: 讀檔確認開頭 `<!-- Playbook-Version: 11 -->` 與 `<!-- Playbook-Variant: online -->`；內容含「接手環境自檢」「驗證方式」「待審下壓」「使用者簽結」。
-- 下一個 agent 該做什麼: 無（純憲法升級；若接手請依 §0 做 hooksPath 自檢）
-- 地雷警告: 無
-
-
-### 2026-09-14 10:20 [maintain] 使用工具: Antigravity
-
-- 完成了什麼: 依使用者指示，將 AGENTS.md 升級至 Playbook v10（三層架構規範、防膨脹門檻改為 10KB、單筆長度上限約 1200 bytes、Review Loop 排除 COMPONENT_MAP.md）。
-- 下一個 agent 該做什麼: 使用者明示推送到 GitHub（豁免本次審閱）。請後續接手的 agent 依各自專案階段推進任務。
-- 地雷警告: 無
-
-### 2026-08-25 16:04 [maintain] 使用工具: Claude Code
-
-- 完成了什麼: 依使用者指示，將 `AGENTS.md` 整份覆蓋升級至 Playbook v9（原版本 v2）。改動摘要：新增「交接基準 commit」欄位與其填寫規則、覆蓋前後順序規定（§2）；新增 §2.1 Review Loop 審閱提示機制；新增 §4「作用範圍僅限本檔所在目錄」巢狀邊界規則；新增語言與編碼規範明文（UTF-8／繁體中文）；新增 `Playbook-Variant: online` 標記。舊版 AGENTS.md（v2，commit `e36fac6`）已存於 git 歷史，可用 `git show e36fac6:AGENTS.md` 找回，不再另外存檔。同時將 `scripts/hooks/pre-commit`／`commit-msg` 整份覆蓋至 v9 版本（中文檔名相容、管轄錨點收斂避免死鎖、大量檔案效能優化、commit-msg 白名單合併/還原訊息等修正），並確認 `.gitattributes` 已含 `scripts/hooks/* text eol=lf`。同步將〈A. 目前狀態〉的「最新 commit」欄改名為「交接基準 commit」（Playbook v3 起的欄位語意變更：只在接手時填一次、工作期間不再更動，不再是「做到哪」），並填入當下 HEAD。
-- 下一個 agent 該做什麼: 本次改動需要審閱：確認 v9 新規則（尤其 §2.1 Review Loop 與 §4 巢狀邊界）是否符合本專案實際工作模式，並確認 hook 版本升級後 commit 仍正常通過。
-- 地雷警告: 無
-
-### 2026-07-06 18:30 [maintain] 使用工具: Claude Haiku
-
-- 完成了什麼: 導入 Playbook v2 工作流系統。覆蓋 AGENTS.md 至 v2 版本（引入 §2.1 Review Loop、交接日誌書寫規範、§4 Git Hook 強制約束）；遷移舊 AGENTS.md §5 的技術脈絡值至 LLM_MEMORY.md E 區；建立 scripts/hooks/{pre-commit,commit-msg}；執行 `git config core.hooksPath scripts/hooks` 啟用。
-- 下一個 agent 該做什麼: 無
+> 2026-11-24 壓縮 2026-07-06～2026-10-22 四筆純工作流導入／升版舊日誌（專案技術脈絡與環境實測台帳均已完整載於同目錄 `COMPONENT_MAP.md`）：
+> - 2026-07-06：導入 Playbook v2 工作流並安裝啟用 `scripts/hooks/*`。
+> - 2026-08-25：升級 Playbook Online v9（覆蓋前 hash `e36fac6`）、更新 `scripts/hooks/*`、補 `.gitattributes`（`eol=lf`）與遷移「交接基準 commit」。
+> - 2026-09-14、2026-10-22：依序升級 Playbook Online v10 與 v11（覆蓋前 hash `8e6860a`）。
 
 ---
 
-> 專案技術脈絡（建置、測試、部署與程式碼慣例）依 `AGENTS.md` §5 統一維護於 `COMPONENT_MAP.md`。
+> 專案技術脈絡（建置、測試、部署與程式碼慣例）依 `AGENTS.md` §0 統一維護於 `COMPONENT_MAP.md`。
