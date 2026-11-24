@@ -5,10 +5,10 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-24 14:07 / 當時階段: maintain
+- 最後更新: 2026-11-24 15:28 / 當時階段: maintain
 - 交接基準 commit: e5960d7 [maintain] 自動巡檢更新鏡頭健康狀態
 - 進行中任務: `0ee8a5a..3de418e` v2 重構、極簡單選氣象列、風場瘦身與 4 項記憶體／凍屏修復已審閱與實測通過，待使用者確認結案或交付新需求
-- 阻塞點: 無
+- 阻塞點: 2026-11-24 14:07 v14 升級待審下壓（基準 `e5960d7..HEAD`，母倉 14:31 已簽結並由本次 v15 整份覆蓋取代）
 
 > 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
 
@@ -24,6 +24,13 @@
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-24 15:28 [maintain] Antigravity (Gemini 4 Neon)
+
+- 完成了什麼: 依 user「再部屬12區」將本 dir `AGENTS.md` 自 Online v14 整份覆蓋升至 v15（無模板外自訂規則；覆蓋前 hash `dbee16e`）；原首筆 v14 待審依 §0 下壓入〈阻塞點〉並守原交接基準。為何改：全 12 倉同步 Online v15 憲法（D38）。
+- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 15`/`Playbook-Variant: online`，全文 `10,219 B`/92 行與母倉逐 byte 一致；日誌 `<10 KB`、本檔 `<16 KB`、本筆 `<1200 B`。
+- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 核對 Online v15 條文一致且 A 區進行中任務未改寫。等待 new session（或 `/clear` 清空 context，建議換模型）審閱。
+- 地雷警告: 未 push；依 §2.1 本 context 禁自審。
 
 ### 2026-11-24 14:07 [maintain] 使用工具: Antigravity (Gemini 4 Neon)
 
