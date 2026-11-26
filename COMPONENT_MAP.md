@@ -58,7 +58,22 @@
 | **Open-Meteo API** | 多座標批次查詢 `200 OK`、CORS `*`、免 Key | 驅動動態風場 6×6 網格與每鏡頭即時風雨遙測，快取 10 分鐘。 |
 | **RainViewer API & Tilecache** | 過去 13 幀雷達路徑與 z6/z7 PNG 圖磚 `200 OK`、CORS `*`、背景全透明、免 Key | 作為預設 2 小時動態雨帶時間軸來源（`maxNativeZoom: 7`）。 |
 | **YouTube oEmbed (`scripts/check-webcams.mjs`)** | 實測 56/56 支鏡頭皆回傳 `HTTP 200`，耗時約 2 秒 | 搭配 `.github/workflows/webcam-health.yml` 每日自動巡檢輸出 `public/health.json`；執行期另由 YouTube Iframe API `onError` 遞補。 |
-| **Git Hooks & `.gitignore`** | `core.hooksPath=scripts/hooks`；`git check-ignore -v node_modules dist` 命中 `.gitignore` | 每次 commit 須同步更新 `LLM_MEMORY.md` 並守 §3 標籤，禁 `--no-verify`。 |
+| **Git Hooks & `.gitignore`** | `core.hooksPath=scripts/hooks`；`git check-ignore -v node_modules dist .env` 皆命中 `.gitignore` | 每次 commit 須同步更新 `LLM_MEMORY.md` 並守 §3 標籤，禁 `--no-verify`。 |
+
+### 全台道路監視器（CCTV）外部資料源與本機密鑰實測台帳（2026-11-26 實測）
+
+- **全台監視器入口現況**：政府**無單一民眾統一入口**（依權責分屬公路局 [168](https://168.thb.gov.tw/)、高公局 [1968](https://1968.freeway.gov.tw/)、22 縣市交通局、水利署 `fhy.wra.gov.tw/fhyv2/monitor/cctvTable`、農村水保署 `246.ardswc.gov.tw`、觀光署 `taiwan.net.tw/m1.aspx?sNo=0042331`、氣象署 `cwa.gov.tw`；警政治安／科技執法不公開）。民間整合入口為 `tw.live`、`findpubliccam.com`、`twipcam.com`、`ictwlive.com`、`ocam.live`、`1968services.tw`（今日實測皆 `HTTP 200`）。
+- **三層官方資料源實測（可收齊 URL、經緯度、名稱）**：
+
+| 來源層 | 官方端點與認證 | 實測支數／格式 | 費率與頻率限制 |
+|---|---|---|---|
+| **國道（高公局）** | `https://tisvcloud.freeway.gov.tw/history/motc20/CCTV.xml`（免 Key） | **1,935 支**（XML；含 `VideoStreamURL`、座標、路段；如 `https://cctvn.freeway.gov.tw/...`） | **0 點**；建議擷取間隔 ≥ 40 秒 |
+| **省道／快速公路（公路局）** | 下載頁 `https://thbapp.thb.gov.tw/opendata/`；清單 `https://cctv-maintain.thb.gov.tw/opendataCCTVs.xml`（免 Key） | **2,354 支**（XML；8 台分流 `cctv-ss01`～`ss08.thb.gov.tw:443`；MJPEG `multipart/x-mixed-replace;boundary=DIGIEVER`，網址後加 `/snapshot` 抓靜態圖）。實測 `T17-28K+850`（鹿港鹿草路5段）與 `T19-2K+600`（彰化中華西路／中央路口）皆 HTTPS `200 OK` 免登入直連 | **0 點**；官方規範間隔 ≥ 60 秒 |
+| **22 縣市市區／縣道（TDX）** | `GET https://tdx.transportdata.tw/api/basic/v2/Road/Traffic/CCTV/City/{City}?$format=JSON`（須會員 OAuth2 Token；非訪客） | 實測 `ChanghuaCounty` 1 次呼叫回 **121 支**（`CCTVs` 陣列外包 dict；含 `changhuatc.chtraffic.gov.tw` 與 `cctv-traffic.chcg.gov.tw:49443`）。實測 `CCTV106`（和美線東路五段／縣139）為 HTTPS MJPEG `boundary=--DigifortBoundary`，另支援 `GetSnapShot` | 免費基礎會員 **3 點／月**、**5 次／分鐘**限流；計費基準 `1,500 次/點` 或 `150 MB/點` |
+
+- **點數估算與省點實證**：國道＋省道直抓 XML 為 **0 點**；僅 22 縣市走 TDX，全抓 1 輪固定 **22 次呼叫（`0.0147 點`）**，加 `Accept-Encoding: gzip` 流量估 `0.4～0.7 MB（~0.005 點）`，單輪約 **`0.015～0.02 點`**（最保守高估 ≤ `0.05 點`）。落地靜態清單後，瀏覽器直連各縣市串流主機看畫面為 **0 點**；單縣故障補抓僅 `~0.0007 點`，季更年耗 `< 0.08 點`。
+- **本機 `.env` 安全配置與紅線（2026-11-26 驗證）**：TDX API Key 已自 `buswatch/.env` 複製至本倉 `.env`（`chmod 600`、`cmp -s` 一致、`git check-ignore -v .env` 命中 `.gitignore:9`）。`vite.config.ts` 未自訂 `envPrefix`（僅注入 `VITE_*`），`TDX_CLIENT_ID`／`TDX_CLIENT_SECRET` **不會**進入 `dist/`；`.env` 僅供本機離線建表腳本使用，嚴禁進版控或暴露給前端，以維持 100% GitHub Free 零付費 Key 紅線。
+- **既有架構整合前置檢核（2026-11-26 盤點）**：(1) `src/types/webcam.ts` 已預留 `provider: 'youtube' | 'hls' | 'mjpeg'` 與 `url?: string`，但 `VideoCard.tsx`／`FocusTheaterModal.tsx` 尚未依 `provider` 分流；(2) `WarRoomMap.tsx` 現採全表 `forEach` 掛紅點，若導入數千支道路 CCTV 須拆檔按需載入並加視野／縮放控管，避免首屏膨脹與全島紅海；(3) `scripts/check-webcams.mjs` 僅驗 YouTube oEmbed，道路清單應與 `webcams.json` 分離；(4) GitHub Pages 為 HTTPS，入表須標記或過濾純 `http://`（Mixed Content）串流。
 
 ---
 

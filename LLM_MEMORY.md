@@ -5,9 +5,14 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-20 16:29 / 當時階段: build
-- 交接基準 commit: 3de418e [build] 修復縮放拖拉記憶體洩漏與頁面向前凍結之四項根因
-- 進行中任務: `0ee8a5a..3de418e` v2 重構、極簡單選氣象列、風場瘦身與 4 項記憶體／凍屏修復已審閱與實測通過，待使用者確認結案或交付新需求
+- 最後更新: 2026-11-26 08:54 / 當時階段: build
+- 交接基準 commit: e5960d7 [maintain] 自動巡檢更新鏡頭健康狀態
+- 進行中任務: v2 颱風戰情室（56 支 YouTube 鏡頭君）已審結上線；本機 `.env` 已配置 TDX API Key（僅本機離線建表用、不進版控／前端），完成全台監視器資料源調查與點數估算（詳見 `COMPONENT_MAP.md`）。待使用者確認是否切 `[plan]` 啟動下一期「全台道路 CCTV 整合」。
+- 待辦事項（下一期草案，尚未定案，動碼前請先確認階段與方案）:
+  1. **離線全台 CCTV 建表與盤點腳本（~0.02 點）**：本機讀取 `.env` 整合「高公局國道 XML（1,935 支，0 點）＋公路局省道 XML（2,354 支，0 點）＋TDX 22 縣市市區／縣道（開 `gzip`、每 15 秒 1 縣避 `5 次/分` 限流）」，裁切產出只含 `id / name / county / lat / lng / url / snapshotUrl / provider / source` 的純靜態檔（如 `public/cctv-roads.json`），同步盤點各縣市支數、HTTPS 相容性（過濾或標記純 `http://` 混合內容）、串流格式（MJPEG／HLS／Snapshot）與空縣市名單。
+  2. **多串流播放器擴充**：於 `VideoCard.tsx`、`FocusTheaterModal.tsx` 依 `stream.provider` 分流，補上 MJPEG 元件（縮圖優先、開播 `<img src>`、卸載清 `src=''` 釋放連線防佔滿同網域連線上限）與必要時 HLS 支援，外連亦改依 `provider` 導向。
+  3. **數千點位地圖分層與拆檔效能設計**：保留 `src/data/webcams.json`（56 支 YouTube 鏡頭君）與每日 `check-webcams.mjs` 巡檢不變；道路 CCTV 獨立拆檔按需載入，設計「道路監視器開關」與 `zoom >= 11` 視野渲染／抽稀，避免全島視角紅海與 `WarRoomMap` 全表 `forEach` 拖慢。
+  4. **低耗點維護策略**：平時瀏覽與看畫面全走本機靜態表直連原主機（0 點）；單支失效僅單縣刷新（`~0.0007 點`），全盤僅季更或半年更（年耗 `< 0.08 點`）。
 - 阻塞點: 無
 
 > 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
@@ -24,6 +29,13 @@
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-26 08:54 [build] 使用工具: Antigravity
+
+- 完成了什麼: 完成全台道路監視器調查、點數估算、本機 `.env` 複製與記憶待辦建檔：(1) 將高公局國道（1,935 支）／公路局省道（2,354 支）／TDX 彰化（121 支）實測台帳、省點估算與 5 項整合檢核寫入 `COMPONENT_MAP.md`；(2) 複製 `buswatch/.env` 至本倉 `.env`（`600`）；(3) 覆蓋交接基準為 `e5960d7`、寫入 A 區 4 項待辦，並封存 `2026-07`～`11-18` 舊日誌入 D 區。為何改：承接全台 CCTV 調查並交接至本倉（明細見 `COMPONENT_MAP.md`）。
+- 驗證方式: `git check-ignore -v .env` 命中 `.gitignore:9:.env`、`.env` `600` 且 `cmp -s` 一致；三來源均實測 `HTTP 200`；`COMPONENT_MAP.md` 12.5 KB、C 區 < 6 KB、本筆 < 1200 B。
+- 下一個 agent 該做什麼: 本次改動需要審閱：核對 `COMPONENT_MAP.md` 台帳僅存已驗證事實與 D 區封存無漏。等待 `new session` 審閱，並請使用者決定是否切 `[plan]` 啟動待辦 1。
+- 地雷警告: 自檢 `core.hooksPath` 原為空，已依 §0 設為 `scripts/hooks` 並 `chmod +x`；禁將 `.env` 入版控或於前端讀 `TDX_*`。
 
 ### 2026-11-20 16:29 [build] 使用工具: Antigravity
 
@@ -53,52 +65,9 @@
 - 下一個 agent 該做什麼: 本次改動需要審閱：核對 `COMPONENT_MAP.md` 僅含已驗證事實且無漏遷、確認 `LLM_MEMORY.md` B 區規劃符合 GitHub Free 紅線與憲法規範且未誤改程式碼。等待 `new session`／新工具審閱，並待使用者確認 B 區待決項標記〈已定案〉與切換 `[build]` 後開工。
 - 地雷警告: CWA 圖資無 CORS 標頭禁以 WebGL 跨網域貼圖直連；B 區未標〈已定案〉前嚴禁動碼。
 
-### 2026-11-18 19:39 [maintain] 使用工具: Antigravity
+## D. 已封存結論（唯讀）
 
-- 完成了什麼: 使用者於 2026-11-18 19:39 明示「我看過結案」，依 §2.1 正式簽結 v12／Online v13 憲法升級，自〈阻塞點〉移除並覆蓋交接基準為 `2f921c1`。
-- 驗證方式: `git diff --name-only` 僅異動 `LLM_MEMORY.md`；純記憶更新免新審閱；C 區 `< 10 KB`。
-- 下一個 agent 該做什麼: 無（等待下一項工作宣告；已覆蓋基準為 `2f921c1`）。
-- 地雷警告: 無
-
-### 2026-11-18 16:01 [maintain] 使用工具: Antigravity
-
-- 完成了什麼: 依使用者指示將本目錄 `AGENTS.md` 自 Online v12 整份覆蓋升級至 v13（無模板外自訂規則；覆蓋前 hash `62e133a`）。為何改：同步全 12 專案憲法至 v13。
-- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 13` 與 `Playbook-Variant: online`，全文與 `Andy_AI_AGENT_WorkFlow/AGENTS.md` 一致。
-- 下一個 agent 該做什麼: 本次改動需要審閱：對照 Online v13 模板確認條文一致且 A 區進行中任務未遭改寫；並於〈阻塞點〉續列前次待審。等待 `new session` 審閱。
-- 地雷警告: 無
-
-### 2026-10-28 11:39 [maintain] 使用工具: Cursor Grok 4.7
-
-- 完成了什麼: 使用者指示把本目錄 AGENTS.md 從 online v11 整份覆蓋成 v12。與其他 v11 檔內容相同，沒有模板外自訂規則。覆蓋前 hash 61eef4a。
-- 驗證方式: 讀檔首兩行是 Playbook-Version: 12 與 Playbook-Variant: online，且有「## 6. 對人訂正」。
-- 下一個 agent 該做什麼: 本次改動需要審閱：對照 v12 模板，確認條文一致且 A 區進行中任務沒被改寫。等待新 session／新工具審閱。
-- 地雷警告: 無
-
-
-### 2026-10-22 11:15 [maintain] 使用工具: Cursor Auto
-
-- 完成了什麼: 依 AI_AGENT_Playbook_Online.md 將本目錄 AGENTS.md 自 v10 整份覆蓋升級至 v11（online）。覆蓋前 AGENTS.md hash: 8e6860a（可用 `git show .md` 找回）。v11 重點：§0 接手環境自檢／驗證方式必填／待審下壓保護；§2.1 使用者簽結與批次審閱。
-- 驗證方式: 讀檔確認開頭 `<!-- Playbook-Version: 11 -->` 與 `<!-- Playbook-Variant: online -->`；內容含「接手環境自檢」「驗證方式」「待審下壓」「使用者簽結」。
-- 下一個 agent 該做什麼: 無（純憲法升級；若接手請依 §0 做 hooksPath 自檢）
-- 地雷警告: 無
-
-
-### 2026-09-14 10:20 [maintain] 使用工具: Antigravity
-
-- 完成了什麼: 依使用者指示，將 AGENTS.md 升級至 Playbook v10（三層架構規範、防膨脹門檻改為 10KB、單筆長度上限約 1200 bytes、Review Loop 排除 COMPONENT_MAP.md）。
-- 下一個 agent 該做什麼: 使用者明示推送到 GitHub（豁免本次審閱）。請後續接手的 agent 依各自專案階段推進任務。
-- 地雷警告: 無
-
-### 2026-08-25 16:04 [maintain] 使用工具: Claude Code
-
-- 完成了什麼: 依使用者指示，將 `AGENTS.md` 整份覆蓋升級至 Playbook v9（原版本 v2）。改動摘要：新增「交接基準 commit」欄位與其填寫規則、覆蓋前後順序規定（§2）；新增 §2.1 Review Loop 審閱提示機制；新增 §4「作用範圍僅限本檔所在目錄」巢狀邊界規則；新增語言與編碼規範明文（UTF-8／繁體中文）；新增 `Playbook-Variant: online` 標記。舊版 AGENTS.md（v2，commit `e36fac6`）已存於 git 歷史，可用 `git show e36fac6:AGENTS.md` 找回，不再另外存檔。同時將 `scripts/hooks/pre-commit`／`commit-msg` 整份覆蓋至 v9 版本（中文檔名相容、管轄錨點收斂避免死鎖、大量檔案效能優化、commit-msg 白名單合併/還原訊息等修正），並確認 `.gitattributes` 已含 `scripts/hooks/* text eol=lf`。同步將〈A. 目前狀態〉的「最新 commit」欄改名為「交接基準 commit」（Playbook v3 起的欄位語意變更：只在接手時填一次、工作期間不再更動，不再是「做到哪」），並填入當下 HEAD。
-- 下一個 agent 該做什麼: 本次改動需要審閱：確認 v9 新規則（尤其 §2.1 Review Loop 與 §4 巢狀邊界）是否符合本專案實際工作模式，並確認 hook 版本升級後 commit 仍正常通過。
-- 地雷警告: 無
-
-### 2026-07-06 18:30 [maintain] 使用工具: Claude Haiku
-
-- 完成了什麼: 導入 Playbook v2 工作流系統。覆蓋 AGENTS.md 至 v2 版本（引入 §2.1 Review Loop、交接日誌書寫規範、§4 Git Hook 強制約束）；遷移舊 AGENTS.md §5 的技術脈絡值至 LLM_MEMORY.md E 區；建立 scripts/hooks/{pre-commit,commit-msg}；執行 `git config core.hooksPath scripts/hooks` 啟用。
-- 下一個 agent 該做什麼: 無
+- **2026-07-06 ～ 2026-11-18（Playbook 工作流演進與簽結）**：本倉自 Playbook v2 導入 Git Hooks（`scripts/hooks/{pre-commit,commit-msg}`）後，歷經 v9／v10／v11／v12 逐步升級至 Online v13（三檔分流、10 KB／16 KB 門檻與 §2.1 雙軌結案），並於 `2026-11-18 19:39` 經使用者明示簽結（`2f921c1`）。相關長期規則與 hook 實況皆已留存於 `AGENTS.md` 與 `COMPONENT_MAP.md`。
 
 ---
 
