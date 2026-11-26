@@ -5,7 +5,7 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-26 09:00 / 當時階段: build
+- 最後更新: 2026-11-26 10:35 / 當時階段: maintain
 - 交接基準 commit: e5960d7 [maintain] 自動巡檢更新鏡頭健康狀態
 - 進行中任務: v2 颱風戰情室（56 支 YouTube 鏡頭君）已審結上線；本機 `.env` 已配置 TDX API Key（僅本機離線建表用、不進版控／前端），完成全台監視器資料源調查與點數估算（詳見 `COMPONENT_MAP.md`）。待使用者確認是否切 `[plan]` 啟動下一期「全台道路 CCTV 整合」。
 - 待辦事項（下一期草案，尚未定案，動碼前請先確認階段與方案）:
@@ -14,6 +14,7 @@
   3. **數千點位地圖分層與拆檔效能設計**：保留 `src/data/webcams.json`（56 支 YouTube 鏡頭君）與每日 `check-webcams.mjs` 巡檢不變；道路 CCTV 獨立拆檔按需載入，設計「道路監視器開關」與 `zoom >= 11` 視野渲染／抽稀，避免全島視角紅海與 `WarRoomMap` 全表 `forEach` 拖慢。
   4. **低耗點維護策略**：平時瀏覽與看畫面全走本機靜態表直連原主機（0 點）；單支失效僅單縣刷新（`~0.0007 點`），全盤僅季更或半年更（年耗 `< 0.08 點`）。
 - 阻塞點:
+  - 2026-11-26 09:00 待審下壓（基準 `e5960d7..dbf1fc8`）：核對 v15 升級、`COMPONENT_MAP.md` CCTV 台帳與 `LLM_MEMORY.md` 合併無漏
   - 2026-11-24 15:28 Online v15 升級待審下壓（基準 `e5960d7..d8b53ff`）
   - 2026-11-24 14:07 Online v14 升級待審下壓（基準 `e5960d7..dbee16e`，母倉 14:31 已簽結並由 v15 覆蓋取代）
 
@@ -31,6 +32,13 @@
 ---
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
+
+### 2026-11-26 10:35 [maintain] Antigravity (Gemini 4 Neon)
+
+- 完成了什麼: 依 user「我看過 同步8倉後推」將本 dir `AGENTS.md` 自 Online v15 整份覆蓋升至 v16（精簡英文＋`ARCHIVE` 16 KB 索引規則；無模板外自訂規則；覆蓋前 hash `d8b53ff`）；原首筆待審依 §0 下壓入〈阻塞點〉並守原交接基準（user 明示 `>16 KB` `ARCHIVE` 索引留便宜模型另做）。為何改：全 8 倉同步 Online v16 憲法（D39）。
+- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 16`/`Playbook-Variant: online`，全文 `12,405 B`/93 行與母倉逐 byte 一致；日誌 `<10 KB`、本檔 `<16 KB`、本筆 `<=1200 B`。
+- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 核對 Online v16 條文一致且 A 區進行中任務未改寫。等待 new session（或 `/clear` 清空 context，建議換模型）審閱。
+- 地雷警告: 依 user 明示同步後 push；依 §2.1 本 context 禁自審。
 
 ### 2026-11-26 09:00 [build] Antigravity
 

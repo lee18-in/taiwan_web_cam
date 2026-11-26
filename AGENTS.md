@@ -1,92 +1,93 @@
-<!-- Playbook-Version: 15 -->
+<!-- Playbook-Version: 16 -->
 <!-- Playbook-Variant: online -->
-# AGENTS.md — AI agent 最高指令
+# AGENTS.md — Supreme Directives for AI Agents
 
-> - **Language and Encoding Standards**: All system files, code annotations, memory files (`LLM_MEMORY.md`), and handover logs for this project are uniformly encoded in **UTF-8** and **Traditional Chinese** by default.
+> - **Language and Encoding Standards**: All project files MUST use **UTF-8**. Reply to user in **Traditional Chinese (繁體中文)**. Write `LLM_MEMORY.md`, `COMPONENT_MAP.md`, `ARCHIVE.md`, `README.md`, code annotations, and handover logs in **telegraphic Traditional Chinese + high-frequency/single-token English terms** (NEVER drift memory/logs into pure English; `AGENTS.md` alone uses telegraphic English).
 
-## 0. 強制第一步
+## 0. Mandatory First Step
 
-動作前先讀**本檔 dir** `LLM_MEMORY.md`、`COMPONENT_MAP.md`（認 file 位置不認 CWD，禁寫 `./` 防指錯上層）。**純唯讀問答不改 file，讀畢三檔即答，免自檢/覆蓋基準/寫 log**；改 file、§2.1 review 或開工走序：**讀三檔 → 環境自檢 → 髒樹先保存(§2) → 有待審先審閱(§2.1) → 覆蓋 `交接基準 commit`(§2) → 開工**，完工更新同 `LLM_MEMORY.md`〈交接日誌〉、〈目前狀態〉。
-- **環境自檢**：接手跑 `git config --get core.hooksPath`：空且 repo 根有 `scripts/hooks/`（含 `pre-commit`/`commit-msg`）則設 `git config core.hooksPath scripts/hooks` 並 `chmod +x scripts/hooks/*`，記〈地雷警告〉；**缺 dir/script 留空勿強設**，〈地雷警告〉註未裝 hook（獨立新條目須先走〈待審下壓保護〉）。已有他值（如 `agent-hooks`）勿覆寫；`chmod` 失敗不中斷，免每輪問 user。
+Before acting, read **this file's dir** `LLM_MEMORY.md` and `COMPONENT_MAP.md` (resolve by file path, not CWD; NEVER use `./` to avoid parent dir). **Read-only Q&A without file edits: answer after reading 3 files; skip self-check, baseline overwrite, and log**. For file edits, §2.1 review, or work execution, follow order: **Read 3 files -> Env self-check -> Save dirty tree (§2) -> Review pending (§2.1) -> Overwrite `交接基準 commit` (§2) -> Work**; on completion, update same `LLM_MEMORY.md`〈交接日誌〉and〈目前狀態〉.
+- **Env self-check**: Run `git config --get core.hooksPath`. If empty and repo root has `scripts/hooks/` (with `pre-commit`/`commit-msg`), set `git config core.hooksPath scripts/hooks` and `chmod +x scripts/hooks/*`, log in〈地雷警告〉; **if dir/script missing, leave empty (NEVER force invalid path)** and note missing hook in〈地雷警告〉(standalone new entry MUST follow〈待審下壓保護〉first). NEVER overwrite existing values (e.g., `agent-hooks`); `chmod` failure is non-fatal—do not ask user every turn.
 
-### 三檔分工
+### Three-File Division
 
-- `AGENTS.md`（本檔）：不變憲法，各 repo 一致，不記專案差異。
-- `LLM_MEMORY.md`（會衰減）：狀態、下一步、交接 log；隨時間封存，禁放長期技術實況。
-- `COMPONENT_MAP.md`（不衰減）：開頭須有〈六十秒進入狀況〉（缺則補；無檔則本 dir 建空殼再讀），存結構/跨模組契約、build/test 指令與 code 慣例（隨實況更新）、決策/否決理由、環境條件、驗證台帳；**僅存已驗證事實與已定案決策，禁寫猜想與未定案討論**。
-- **精省原則**：三檔與 log 採電報體省 context/token——去贅字、助詞、空泛動詞(進行/執行)與純語法量詞，專有/常見詞(單 token 原詞如 code/test/config/script/path/data/file/dir/log/review/user)直寫原文免強翻繁中；**禁省**物理單位、否定強制字、量化門檻與契約錨點。
+- `AGENTS.md` (this file): Immutable constitution, identical across repos; no project diffs.
+- `LLM_MEMORY.md` (decaying): Status, next steps, handover log; archived over time, NEVER store long-term tech facts.
+- `COMPONENT_MAP.md` (non-decaying): MUST start with〈六十秒進入狀況〉(add if missing; if file absent in this dir, create skeleton then read). Stores structure/cross-module contracts, build/test commands & code conventions (update live), decisions/rejections, env conditions, verification ledger; **store ONLY verified facts and finalized decisions—NEVER speculations or unsettled discussions**.
+- **Telegraphic Principle**: Memory files, `README.md`, and logs use telegraphic Traditional Chinese to save context/tokens—strip filler words, particles, empty verbs (進行/執行), and grammatical classifiers; write common single-token English words (code/test/config/script/path/data/file/dir/log/review/user) directly without forced translation; **NEVER omit** physical units, negative/mandatory modals, quantitative thresholds, or contract anchors.
 
-### 防膨脹維護
+### Anti-Bloat Maintenance
 
-- **〈交接日誌〉> 10 KB**(計 bytes)：先確認不衰減知識已入 `COMPONENT_MAP.md`（漏補萃取，禁丟棄），壓最舊條目入〈已封存結論〉至門檻下；〈已封存結論〉過長整段搬同 dir `ARCHIVE.md`（非必讀，按需查）。
-- **`LLM_MEMORY.md` 整檔 > 16 KB**：清 A 區已解除舊紀錄、外移/封存過期 B 區至同 dir `ARCHIVE.md` 或按需子檔，去重與 `COMPONENT_MAP.md` 重疊項（禁刪未結待審與進行中紅線）。
-- **`COMPONENT_MAP.md` > 16 KB**：分流至門檻下（核心紅線/契約不為湊字硬刪）：
-  * **失效/被取代歷史**（舊架構、過期台帳）→ 同 dir `ARCHIVE.md`。
-  * **有效冗長明細**（長表、大 spec、長驗證紀錄）→ 同 dir 按需子檔（如 `docs/`），**禁混 `ARCHIVE.md`**。
-  * **主檔必留**：〈六十秒進入狀況〉、核心契約與紅線、外移子檔指路(path＋範圍)；禁刪模糊或拆碎。
-- **不綁階段**：任一階段超標皆須順手處理。
+- **〈交接日誌〉> 10 KB** (bytes): First confirm non-decaying knowledge is in `COMPONENT_MAP.md` (extract/backfill if missed, NEVER discard), then compress oldest entries into〈已封存結論〉below threshold; if〈已封存結論〉too long, move to same-dir `ARCHIVE.md` (optional read, check on demand).
+- **`LLM_MEMORY.md` full file > 16 KB**: Purge resolved Section A history, move/archive expired Section B to same-dir `ARCHIVE.md` or on-demand subfiles, deduplicate `COMPONENT_MAP.md` overlaps (NEVER delete unresolved reviews or active red lines).
+- **`COMPONENT_MAP.md` > 16 KB**: Route below threshold (NEVER delete core red lines/contracts to fit size):
+  * **Obsolete/superseded history** (old architectures, expired ledgers) -> same-dir `ARCHIVE.md`.
+  * **Active verbose details** (long tables, large specs, long verification logs) -> same-dir on-demand subfiles (e.g., `docs/`), **NEVER mix into `ARCHIVE.md`**.
+  * **Main file MUST retain**:〈六十秒進入狀況〉, core contracts & red lines, subfile pointers (path + scope); NEVER delete into vagueness or fragment.
+- **`ARCHIVE.md` > 16 KB**: **NEVER load full file into main context**; maintain top `## 0. 索引總表` (`日期｜#標籤｜錨點｜摘要`, no hardcoded line numbers; prepend 1 line on every move into `ARCHIVE.md` from any source, including `LLM_MEMORY.md`/`COMPONENT_MAP.md`). Read top index first then partial-read; if missing/uncertain, spawn lightweight read-only subagent for summary + line numbers, or search if no subagent.
+- **Stage-independent**: Handle any threshold breach immediately in any stage.
 
-### 交接日誌書寫規範
+### Handover Log Rules
 
-- **寫入分流（最優先）**：log 僅記事件（完成了什麼/驗證方式/下一步/地雷警告）；不衰減知識（決策理由/失敗方案/驗證方法/環境條件/跨次踩坑）**當場入 `COMPONENT_MAP.md`**，log「為何改」限 1 行指路。
-- **必填 `驗證方式:`**：未驗證明寫「未驗證」；宣告機制或 `.gitignore` 生效須附實測輸出（如 `git check-ignore -v`）。
-- **單筆上限約 1200 bytes**；標題 `### YYYY-MM-DD HH:MM [階段] <工具>`。
-- **待審下壓保護**：追加前（含環境自檢或保存現場〈地雷警告〉獨立新條目），原首筆含未結「需要審閱」須先抄入 A 區〈阻塞點〉（含基準 commit 範圍）。
-- **時序與防併發**：時間戳取本輪系統 metadata（須含本機時分，否則用指令；禁推算），晚於首筆並維持全份遞減；多 agent 併發、拉遠端或 `edit` 匹配失敗先重讀 `LLM_MEMORY.md`。
-- 同 session 連續小改更新首筆；換手、換階段(§1)或重大進度/阻塞才新增。
-- 「下一個 agent 該做什麼」須具體可執行，禁套話；無則寫「無」。
+- **Write Routing (Top Priority)**: Log events ONLY (`完成了什麼`/`驗證方式:`/`下一個 agent 該做什麼`/`地雷警告`); put non-decaying knowledge (decision rationale, failed approaches, verification methods, env conditions, recurring pitfalls) **immediately into `COMPONENT_MAP.md`**, keeping log "為何改" to a 1-line pointer.
+- **Mandatory `驗證方式:`**: Write `未驗證` if unverified; declaring a mechanism or `.gitignore` active requires actual output (e.g., `git check-ignore -v`).
+- **Max ~1200 bytes per entry**; title `### YYYY-MM-DD HH:MM [階段] <工具>`.
+- **Pending-Review Push-Down (〈待審下壓保護〉)**: Before prepending (including standalone〈地雷警告〉from env self-check or dirty-tree save), if top entry has unresolved `需要審閱`, copy it into Section A〈阻塞點〉(with baseline commit range) first.
+- **Ordering & Concurrency**: Use current-turn system metadata timestamp (MUST include local HH:MM, else run command; NEVER guess), newer than top entry and descending throughout; re-read `LLM_MEMORY.md` on multi-agent concurrency, remote pull, or `edit` match failure.
+- Update top entry for same-session minor edits; add new entry ONLY on handover, stage switch (§1), or major progress/blocker.
+- `下一個 agent 該做什麼` MUST be concrete and actionable (no boilerplate); write `無` if none.
 
-## 1. 階段分工（依 `LLM_MEMORY.md`〈目前狀態〉，不越權）
+## 1. Stage Division (Per `LLM_MEMORY.md`〈目前狀態〉; NEVER Exceed Authority)
 
-權限跟階段走，無關工具/模型；僅 user 可切換，agent 禁自切。
+Permissions follow stage regardless of tool/model; ONLY user may switch—agent NEVER self-switches.
 
-- **規劃 [plan]**：僅產出/修訂純文字架構與計畫進 `LLM_MEMORY.md`；未標〈已定案〉禁改 code。
-- **建置 [build]**：依〈已定案〉計畫小步實作（有 build/test 指令每步改完即驗，禁堆大段未驗變更）；禁重寫計畫，有問題留言並停該項。
-- **維運 [maintain]**：debug、小修、看門狗與監控優化；禁動架構，需動則 log 提案待 user 決定是否退 `[plan]`。
+- **Plan `[plan]`**: Write/revise plain-text architecture & plans in `LLM_MEMORY.md` ONLY; NEVER edit code unless marked〈已定案〉.
+- **Build `[build]`**: Implement〈已定案〉plan in small steps (if build/test commands exist, verify every step; NEVER stack large unverified edits); NEVER rewrite plan—if blocked, log and halt that item.
+- **Maintain `[maintain]`**: Debug, minor fixes, watchdog & monitoring tuning; NEVER alter architecture—if needed, propose in log for user to decide on reverting to `[plan]`.
 
-## 2. 交接協定（硬規則）
+## 2. Handover Protocol (Hard Rules)
 
-- **覆蓋 `交接基準 commit`(先審後覆蓋)**：無待審或完成 §2.1 review，將 `git log -1 --format='%h %s'` 覆寫〈目前狀態〉「交接基準 commit」；工作期**不再動**（HEAD 領先正常），**禁改填本次或 `--amend` 後 hash**。
-- 基準 hash 失效(`rebase`/`amend`)勿猜還原，改用 `git log --oneline -10` 判範圍記〈地雷警告〉。
-- 換 agent 前須 commit（允許 WIP，§3）；接手僅依基準 commit＋`LLM_MEMORY.md` 起手，禁推測未記意圖。
-- 接手 working tree 不乾淨：**僅就本 dir 未提交變更**先以 `[takeover] WIP: 接手時發現未提交變更` commit 保存記〈地雷警告〉再開工；跨 dir 髒檔/untracked file 禁越界納入(§4)，記〈地雷警告〉逐檔 `git add`。
-- **同步衝突**：無歧義小衝突自動語意合併；**禁對含雙方異動 file 用 `--ours`/`--theirs` 機械覆蓋**（`> 3` file 或單 file `> 3` conflict hunk/語意交錯，先讀雙方 context 再語意合併並記方式與驗證）：
-  * **對照/暫存**：優先讀 Git index（`git show :1:/:2:/:3:<path>`），另存限系統 temp dir（`/tmp/`、`$TEMP`）合完即刪，**禁留 working tree**。
-  * **記憶檔**：`LLM_MEMORY.md` 留雙方 log 降序重排（未結待審下壓〈阻塞點〉）、〈目前階段〉衝突問 user、〈交接基準 commit〉留接手原值；`COMPONENT_MAP.md` 留雙方有效條目去重。
-  * **方式/紅線**：優先 `merge`（受 `pre-commit`/`commit-msg` 白名單與 §3 約束），`rebase` 致基準失效走前退路；涉**業務二選一**或 **`AGENTS.md` 衝突**停手列差異問 user，未指示禁 `push`。
-- 未經 user 明示：禁 `push`、`force-push`、改遠端 branch。
+- **Overwrite `交接基準 commit` (Review First, Overwrite Second)**: With no pending review or after §2.1 review, overwrite〈目前狀態〉`交接基準 commit` with `git log -1 --format='%h %s'`; **leave untouched** during work (HEAD ahead is normal), **NEVER fill current or post-`--amend` hash**.
+- If baseline hash invalidated (`rebase`/`amend`), NEVER guess—use `git log --oneline -10` to judge range and log in〈地雷警告〉.
+- MUST commit before agent switch (WIP allowed, §3); start strictly from baseline commit + `LLM_MEMORY.md`, NEVER guess unlogged intent.
+- Dirty working tree on takeover: commit **this dir's uncommitted changes ONLY** as `[takeover] WIP: 接手時發現未提交變更` and log in〈地雷警告〉before working; NEVER include cross-dir dirty/untracked files (§4)—log in〈地雷警告〉and `git add` file-by-file.
+- **Sync Conflicts**: Auto-merge unambiguous minor conflicts semantically; **NEVER mechanically overwrite dual-modified files with `--ours`/`--theirs`** (`> 3` files or single file `> 3` conflict hunks/interleaved semantics: read both contexts before semantic merge, log method & verification):
+  * **Compare/Temp**: Prefer Git index (`git show :1:/:2:/:3:<path>`); save temp copies in system temp dir (`/tmp/`, `$TEMP`) ONLY and delete right after merge—**NEVER leave in working tree**.
+  * **Memory Files**: `LLM_MEMORY.md` keeps both logs sorted descending (push unresolved reviews to〈阻塞點〉), ask user on〈目前階段〉conflict, keep takeover `交接基準 commit`; `COMPONENT_MAP.md` keeps & deduplicates valid entries from both.
+  * **Method/Red Lines**: Prefer `merge` (under `pre-commit`/`commit-msg` whitelist & §3); if `rebase` invalidates baseline, use fallback above; on **business either-or** or **`AGENTS.md` conflict**, halt, list diffs, and ask user; NEVER `push` without instruction.
+- Without explicit user instruction: NEVER `push`, `force-push`, or alter remote branches.
 
 ### 2.1 Review Loop
 
-- commit 異動 `LLM_MEMORY.md`/`README.md`/`ARCHIVE.md` 外 file（含 code/config/`AGENTS.md`/`COMPONENT_MAP.md`/外移子檔/計畫/提案；純更新此 3 檔免審），不加標籤或獨立欄，log「完成了什麼」寫改什麼與為何改(1 行)，「下一個 agent 該做什麼」開頭寫「本次改動需要審閱：<檢查點/風險>」。
-- **待審堆積提醒**：接手未結「需要審閱」（含〈阻塞點〉）`>= 2` 筆，開頭列出問 user 當場簽結或開 new session（含 `/clear` 清空 context）review，**不硬擋本次 commit**；提醒不免除 review，「不硬擋」僅指 commit，禁跳過 review 開工。
-- 首筆 log 或〈阻塞點〉含未結「需要審閱」，接手先 review：`git diff <交接基準 commit>..HEAD -- <本 dir>`（repo 根可省 path）檢視前手異動（單 new session 可批次 review 多筆），必於覆蓋基準前執行(§0/§2)，核對：
-  1. 符合架構與規則、未破既有邏輯。
-  2. log 留有所稱 test/驗證紀錄。
-  - 通過：新條目記結論移出〈阻塞點〉，始得續做原工作。
-  - 不通過：禁自改前手內容，僅記問題停手待裁（需人類決議依 §5）。
-- **禁左手審右手**：寫「需要審閱」agent 嚴禁於**未清空同 context** 自審剛交異動（亦禁派 subagent 代審）；commit 後**停手**，寫「等待 new session（或 `/clear` 清空 context，建議換模型）審閱」——經 `/clear` 完全清空 context（非 `/compact`）重讀三檔獨立起手視同 new session。
-- **雙軌結案**：
-  * **user 簽結(事後)**：明示「我看過，結案」（或同義語），記時間與「使用者已審閱結案」移出〈阻塞點〉，效力同 new session 通過。
-  * **user 豁免(事前)**：明示「本次不需審閱」，記「使用者於 `<時間>` 明示豁免本次審閱」即續做；agent 禁自豁免。
+- Commits modifying files outside `LLM_MEMORY.md`/`README.md`/`ARCHIVE.md` (including code/config/`AGENTS.md`/`COMPONENT_MAP.md`/subfiles/plans/proposals; updating ONLY these 3 files is exempt): add no extra tag or column—log what & why (1 line) in `完成了什麼`, and start `下一個 agent 該做什麼` with `本次改動需要審閱：<檢查點/風險>`.
+- **Backlog Reminder**: If unresolved `需要審閱` (including〈阻塞點〉) `>= 2` on takeover, list upfront and ask user to sign off now or open a new session (including `/clear` context wipe) for review, **without hard-blocking current commit**; reminder NEVER waives review ("not hard-blocking" applies ONLY to commit—NEVER skip review to start work).
+- If top log or〈阻塞點〉has unresolved `需要審閱`, review first on takeover: run `git diff <交接基準 commit>..HEAD -- <this dir>` (path optional at repo root) to inspect prior edits (single new session may batch-review multiple items) **before overwriting baseline** (§0/§2), checking:
+  1. Fits architecture/rules without breaking existing logic.
+  2. Log contains claimed test/verification records.
+  - **Pass**: Log conclusion in new entry, remove from〈阻塞點〉, then resume work.
+  - **Fail**: NEVER self-fix prior edits; log issues, halt, and await ruling (per §5 if human decision needed).
+- **No Self-Review**: Agent writing `需要審閱` MUST NEVER self-review its just-committed edits in **same uncleared context** (nor delegate review to subagent); **halt after commit** and write `等待 new session（或 /clear 清空 context，建議換模型）審閱`—full `/clear` context wipe (NOT `/compact`) + re-reading 3 files from scratch counts as new session.
+- **Dual-Track Closure**:
+  * **User Sign-Off (Post-hoc)**: User states "我看過，結案" (or equivalent) -> log time & `使用者已審閱結案`, remove from〈阻塞點〉(equals new-session pass).
+  * **User Exemption (Pre-hoc)**: User states "本次不需審閱" -> log `使用者於 <時間> 明示豁免本次審閱` and continue; agent NEVER self-exempts.
 
-## 3. Commit 格式
+## 3. Commit Format
 
-`[階段] 動作簡述` 例：`[build] WIP: ADC 濾波參數化，尚缺單元測試`
-階段標籤：`[plan]` `[build]` `[maintain]`，交接特例 `[takeover]`(§2)。
+`[<stage>] <brief action>` e.g., `[build] WIP: ADC 濾波參數化，尚缺單元測試`
+Stage tags: `[plan]` `[build]` `[maintain]`, takeover exception `[takeover]` (§2).
 
-## 4. 邊界
+## 4. Boundaries
 
-- **作用限本檔 dir 及子 dir**（巢狀以本 dir 為準）：
-  * 規則衝突從本檔，不依上層改做法。
-  * **禁改上層 `AGENTS.md`/`LLM_MEMORY.md`/`COMPONENT_MAP.md`**，禁將本 dir log 寫入上層，各自獨立交接。
-  * 上層可讀（理解 context）；動本 dir 外 file 須先報請 user 同意。
-- `README.md` 為人類向文件，禁寫規劃、狀態、待辦。
-- 未經 user 明示禁改本檔(`AGENTS.md`)。
-- 工具入口轉接頭（`CLAUDE.md`/`GEMINI.md` 等）僅引用(`@./AGENTS.md`)或外掛工具限定 config，禁覆寫/放寬本檔規則（衝突從本檔）。
-- commit 受 `scripts/hooks/` 硬擋檢查，禁 `--no-verify` 略過（未裝 hook 見 §0）；僅排程/CI Bot 純更新專案已宣告產出 data file（如 `public/health.json`）免改 `LLM_MEMORY.md`（禁混改 code/config，agent 禁自豁免）。
+- **Scope Limited to This File's Dir & Subdirs** (nested setups: this file's dir prevails):
+  * On rule conflict, follow THIS file—do not alter behavior per parent.
+  * **NEVER modify parent `AGENTS.md`/`LLM_MEMORY.md`/`COMPONENT_MAP.md`**, and NEVER write this dir's log into parent; each hands over independently.
+  * Parent is readable for context; editing files outside this dir requires prior user approval.
+- `README.md` is human-facing docs—NEVER write plans, status, or TODOs.
+- NEVER modify this file (`AGENTS.md`) without explicit user instruction.
+- Tool entry adapters (`CLAUDE.md`/`GEMINI.md`, etc.) ONLY reference `@./AGENTS.md` or tool-specific config—NEVER override/relax this file's rules (this file prevails).
+- Commits are hard-checked by `scripts/hooks/`; NEVER bypass with `--no-verify` (if unconfigured, see §0). ONLY scheduled/CI bots purely updating declared generated data files (e.g., `public/health.json`) are exempt from updating `LLM_MEMORY.md` (NEVER mix code/config edits; agent NEVER self-exempts).
 
-## 5. 對人決議與訂正
+## 5. Human Decisions & Corrections
 
-- **需人類決議（全域）**：待決項須**逐條編號(`1.` `2.`…)且選項編號(`1A` `1B`…)**，僅簡述待決點、建議與極簡優缺點；待拍板或點名編號再展開細節（log 守 1200 bytes 僅記摘要）。
-- **對人訂正（限本 turn 剛答）**：user 指證有誤且無異議，簡短承認直修繼續，禁耗 token 解釋；已交接 commit、已定案計畫仍走 §1/§2.1。
+- **Human Decisions (Global)**: Number pending items (`1.` `2.`…) and options (`1A` `1B`…), stating ONLY brief point, recommendation, and ultra-short pros/cons; expand details ONLY after user ruling or option callout (log capped at ~1200 bytes with summary only).
+- **User Corrections (Current Turn's Just-Given Answer ONLY)**: If user flags an undisputed error, acknowledge briefly, fix directly, and continue—NEVER waste tokens explaining; committed handovers and〈已定案〉plans still follow §1/§2.1.
