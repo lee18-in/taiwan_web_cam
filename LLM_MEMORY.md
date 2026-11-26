@@ -5,7 +5,7 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-26 08:54 / 當時階段: build
+- 最後更新: 2026-11-26 09:00 / 當時階段: build
 - 交接基準 commit: e5960d7 [maintain] 自動巡檢更新鏡頭健康狀態
 - 進行中任務: v2 颱風戰情室（56 支 YouTube 鏡頭君）已審結上線；本機 `.env` 已配置 TDX API Key（僅本機離線建表用、不進版控／前端），完成全台監視器資料源調查與點數估算（詳見 `COMPONENT_MAP.md`）。待使用者確認是否切 `[plan]` 啟動下一期「全台道路 CCTV 整合」。
 - 待辦事項（下一期草案，尚未定案，動碼前請先確認階段與方案）:
@@ -13,7 +13,9 @@
   2. **多串流播放器擴充**：於 `VideoCard.tsx`、`FocusTheaterModal.tsx` 依 `stream.provider` 分流，補上 MJPEG 元件（縮圖優先、開播 `<img src>`、卸載清 `src=''` 釋放連線防佔滿同網域連線上限）與必要時 HLS 支援，外連亦改依 `provider` 導向。
   3. **數千點位地圖分層與拆檔效能設計**：保留 `src/data/webcams.json`（56 支 YouTube 鏡頭君）與每日 `check-webcams.mjs` 巡檢不變；道路 CCTV 獨立拆檔按需載入，設計「道路監視器開關」與 `zoom >= 11` 視野渲染／抽稀，避免全島視角紅海與 `WarRoomMap` 全表 `forEach` 拖慢。
   4. **低耗點維護策略**：平時瀏覽與看畫面全走本機靜態表直連原主機（0 點）；單支失效僅單縣刷新（`~0.0007 點`），全盤僅季更或半年更（年耗 `< 0.08 點`）。
-- 阻塞點: 無
+- 阻塞點:
+  - 2026-11-24 15:28 Online v15 升級待審下壓（基準 `e5960d7..d8b53ff`）
+  - 2026-11-24 14:07 Online v14 升級待審下壓（基準 `e5960d7..dbee16e`，母倉 14:31 已簽結並由 v15 覆蓋取代）
 
 > 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
 
@@ -30,12 +32,26 @@
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
 
-### 2026-11-26 08:54 [build] 使用工具: Antigravity
+### 2026-11-26 09:00 [build] Antigravity
 
-- 完成了什麼: 完成全台道路監視器調查、點數估算、本機 `.env` 複製與記憶待辦建檔：(1) 將高公局國道（1,935 支）／公路局省道（2,354 支）／TDX 彰化（121 支）實測台帳、省點估算與 5 項整合檢核寫入 `COMPONENT_MAP.md`；(2) 複製 `buswatch/.env` 至本倉 `.env`（`600`）；(3) 覆蓋交接基準為 `e5960d7`、寫入 A 區 4 項待辦，並封存 `2026-07`～`11-18` 舊日誌入 D 區。為何改：承接全台 CCTV 調查並交接至本倉（明細見 `COMPONENT_MAP.md`）。
-- 驗證方式: `git check-ignore -v .env` 命中 `.gitignore:9:.env`、`.env` `600` 且 `cmp -s` 一致；三來源均實測 `HTTP 200`；`COMPONENT_MAP.md` 12.5 KB、C 區 < 6 KB、本筆 < 1200 B。
-- 下一個 agent 該做什麼: 本次改動需要審閱：核對 `COMPONENT_MAP.md` 台帳僅存已驗證事實與 D 區封存無漏。等待 `new session` 審閱，並請使用者決定是否切 `[plan]` 啟動待辦 1。
-- 地雷警告: 自檢 `core.hooksPath` 原為空，已依 §0 設為 `scripts/hooks` 並 `chmod +x`；禁將 `.env` 入版控或於前端讀 `TDX_*`。
+- 完成了什麼: 完成全台道路 CCTV 調查、`.env` 複製（`600`）、待辦與台帳建檔（`COMPONENT_MAP.md`），並依 user 指示 push 前 `merge origin/main`（`117ed89`，收下 Online v15 `AGENTS.md` 與 `public/health.json`）；`LLM_MEMORY.md` 採語意合併留雙方日誌降序重排、將 `11-24` v15/v14 待審下壓〈阻塞點〉並封存 `2026-07`～`11-18` 舊日誌入 D 區。為何改：交接 CCTV 調查並同步遠端後推送（詳 `COMPONENT_MAP.md`）。
+- 驗證方式: `git check-ignore -v .env` 命中 `.gitignore:9:.env`、`.env` 未進版控；國道/省道 XML 與 TDX `ChanghuaCounty` 實測 `200 OK`；Python 驗無衝突標記、`LLM_MEMORY.md` < 16 KB、`COMPONENT_MAP.md` 12.5 KB、C 區 < 10 KB、本筆 < 1200 B。
+- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 批次核對 v15 升級、`COMPONENT_MAP.md` CCTV 台帳與 `LLM_MEMORY.md` 合併無漏。等待 new session（或 `/clear` 清空 context，建議換模型）審閱，再由 user 決定是否切 `[plan]`。
+- 地雷警告: 自檢原 `core.hooksPath` 空已設 `scripts/hooks` 並 `chmod +x`；禁 `.env` 入版控或前端讀 `TDX_*`。
+
+### 2026-11-24 15:28 [maintain] Antigravity (Gemini 4 Neon)
+
+- 完成了什麼: 依 user「再部屬12區」將本 dir `AGENTS.md` 自 Online v14 整份覆蓋升至 v15（無模板外自訂規則；覆蓋前 hash `dbee16e`）；原首筆 v14 待審依 §0 下壓入〈阻塞點〉並守原交接基準。為何改：全 12 倉同步 Online v15 憲法（D38）。
+- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 15`/`Playbook-Variant: online`，全文 `10,219 B`/92 行與母倉逐 byte 一致；日誌 `<10 KB`、本檔 `<16 KB`、本筆 `<1200 B`。
+- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 核對 Online v15 條文一致且 A 區進行中任務未改寫。等待 new session（或 `/clear` 清空 context，建議換模型）審閱。
+- 地雷警告: 未 push；依 §2.1 本 context 禁自審。
+
+### 2026-11-24 14:07 [maintain] 使用工具: Antigravity (Gemini 4 Neon)
+
+- 完成了什麼: 依使用者「12全區佈署」指示將本目錄 `AGENTS.md` 自 Online v13 整份覆蓋升級至 v14（無模板外自訂規則；覆蓋前 hash `2f921c1`）；依 §0 將 2026-07-06～10-22 四筆純工作流升級舊日誌壓縮入 D 區使 C 區低於 10 KB；無待審已覆蓋交接基準為 `e5960d7`。為何改：全 12 倉同步 Online v14 憲法。
+- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 14` 與 `Playbook-Variant: online`，全文 `10,191 B`/89 行與 `Andy_AI_AGENT_WorkFlow/AGENTS.md` 逐位元組一致。
+- 下一個 agent 該做什麼: 本次改動需要審閱：對照 Online v14 模板確認條文一致且 A 區進行中任務未遭改寫與舊日誌壓縮無遺失。等待 `new session`（或 `/clear` 清空 `context`，建議換模型）審閱。
+- 地雷警告: 未 push；依 §2.1 本 `context` 禁自審。
 
 ### 2026-11-20 16:29 [build] 使用工具: Antigravity
 
@@ -65,10 +81,14 @@
 - 下一個 agent 該做什麼: 本次改動需要審閱：核對 `COMPONENT_MAP.md` 僅含已驗證事實且無漏遷、確認 `LLM_MEMORY.md` B 區規劃符合 GitHub Free 紅線與憲法規範且未誤改程式碼。等待 `new session`／新工具審閱，並待使用者確認 B 區待決項標記〈已定案〉與切換 `[build]` 後開工。
 - 地雷警告: CWA 圖資無 CORS 標頭禁以 WebGL 跨網域貼圖直連；B 區未標〈已定案〉前嚴禁動碼。
 
-## D. 已封存結論（唯讀）
+## D. 已封存結論（自〈交接日誌〉壓縮搬入，唯讀）
 
-- **2026-07-06 ～ 2026-11-18（Playbook 工作流演進與簽結）**：本倉自 Playbook v2 導入 Git Hooks（`scripts/hooks/{pre-commit,commit-msg}`）後，歷經 v9／v10／v11／v12 逐步升級至 Online v13（三檔分流、10 KB／16 KB 門檻與 §2.1 雙軌結案），並於 `2026-11-18 19:39` 經使用者明示簽結（`2f921c1`）。相關長期規則與 hook 實況皆已留存於 `AGENTS.md` 與 `COMPONENT_MAP.md`。
+> 2026-11-24 / 2026-11-26 壓縮 2026-07-06～2026-11-18 純工作流導入／升版與簽結舊日誌（專案技術脈絡與環境實測台帳均已載於 `COMPONENT_MAP.md`）：
+> - 2026-07-06：導入 Playbook v2 工作流並安裝啟用 `scripts/hooks/*`。
+> - 2026-08-25：升級 Playbook Online v9（覆蓋前 hash `e36fac6`）、更新 `scripts/hooks/*`、補 `.gitattributes`（`eol=lf`）與遷移「交接基準 commit」。
+> - 2026-09-14、2026-10-22、2026-10-28：依序升級 Playbook Online v10、v11（覆蓋前 `8e6860a`）與 v12（覆蓋前 `61eef4a`）。
+> - 2026-11-18：升級 Playbook Online v13（覆蓋前 `62e133a`），並於同日 19:39 經使用者明示簽結（`2f921c1`）。
 
 ---
 
-> 專案技術脈絡（建置、測試、部署與程式碼慣例）依 `AGENTS.md` §5 統一維護於 `COMPONENT_MAP.md`。
+> 專案技術脈絡（建置、測試、部署與程式碼慣例）依 `AGENTS.md` §0 統一維護於 `COMPONENT_MAP.md`。
