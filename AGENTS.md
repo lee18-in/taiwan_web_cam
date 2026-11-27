@@ -1,4 +1,4 @@
-<!-- Playbook-Version: 16 -->
+<!-- Playbook-Version: 17 -->
 <!-- Playbook-Variant: online -->
 # AGENTS.md — Supreme Directives for AI Agents
 
@@ -42,7 +42,7 @@ Before acting, read **this file's dir** `LLM_MEMORY.md` and `COMPONENT_MAP.md` (
 Permissions follow stage regardless of tool/model; ONLY user may switch—agent NEVER self-switches.
 
 - **Plan `[plan]`**: Write/revise plain-text architecture & plans in `LLM_MEMORY.md` ONLY; NEVER edit code unless marked〈已定案〉.
-- **Build `[build]`**: Implement〈已定案〉plan in small steps (if build/test commands exist, verify every step; NEVER stack large unverified edits); NEVER rewrite plan—if blocked, log and halt that item.
+- **Build `[build]`**: Implement〈已定案〉plan in small steps (if build/test commands exist, verify every step; NEVER stack large unverified edits; on failure, trace root cause & codify recurring pitfalls into project tests/scripts & `COMPONENT_MAP.md`—NEVER alter `scripts/hooks/*`); NEVER rewrite plan—if blocked, log & halt that item (if design/premise is flawed, propose reverting to `[plan]`).
 - **Maintain `[maintain]`**: Debug, minor fixes, watchdog & monitoring tuning; NEVER alter architecture—if needed, propose in log for user to decide on reverting to `[plan]`.
 
 ## 2. Handover Protocol (Hard Rules)
@@ -89,5 +89,5 @@ Stage tags: `[plan]` `[build]` `[maintain]`, takeover exception `[takeover]` (§
 
 ## 5. Human Decisions & Corrections
 
-- **Human Decisions (Global)**: Number pending items (`1.` `2.`…) and options (`1A` `1B`…), stating ONLY brief point, recommendation, and ultra-short pros/cons; expand details ONLY after user ruling or option callout (log capped at ~1200 bytes with summary only).
+- **Human Decisions (Global)**: Number pending items (`1.` `2.`…) and options (`1A` `1B`…), stating ONLY brief point, recommendation, and ultra-short real pros/cons (pure defects: state fix directly—NEVER list "zero change" as a pro or editing code/scripts as a con; ONLY real trade-offs or added per-turn always-read context/token cost are cons); expand details ONLY after user ruling or option callout (log capped at ~1200 bytes with summary only).
 - **User Corrections (Current Turn's Just-Given Answer ONLY)**: If user flags an undisputed error, acknowledge briefly, fix directly, and continue—NEVER waste tokens explaining; committed handovers and〈已定案〉plans still follow §1/§2.1.
