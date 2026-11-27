@@ -35,6 +35,13 @@
 # "dir/\346\270\254.md" 這種帶引號的八進位跳脫形式，前導的 " 會讓 ${f%/*} 取到錯誤的
 # 目錄名、往上找不到記憶檔，於是「誤判成上層管轄」或「靜默放行」——本 Playbook 的
 # 目標使用者多為中文筆記庫，這是常態而非邊角案例。
+is_exempt_const_file() {
+  case "$1" in
+    AGENTS.md|CLAUDE.md|GEMINI.md) return 0 ;;
+  esac
+  return 1
+}
+
 dirs=$(
   git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRD |
   while IFS= read -r f; do
@@ -42,15 +49,13 @@ dirs=$(
     [ "$d" = "$f" ] && d="."
     b=${f##*/}
     # 純憲法同步豁免（v19／D45）：工作流根目錄僅改 AGENTS.md／CLAUDE.md／GEMINI.md 時免改 LLM_MEMORY.md
-    case "$b" in
-      AGENTS.md|CLAUDE.md|GEMINI.md)
-        if [ "$d" = "." ]; then
-          [ -f "AGENTS.md" ] && [ -f "LLM_MEMORY.md" ] && continue
-        else
-          [ -f "$d/AGENTS.md" ] && [ -f "$d/LLM_MEMORY.md" ] && continue
-        fi
-        ;;
-    esac
+    if is_exempt_const_file "$b"; then
+      if [ "$d" = "." ]; then
+        [ -f "AGENTS.md" ] && [ -f "LLM_MEMORY.md" ] && continue
+      else
+        [ -f "$d/AGENTS.md" ] && [ -f "$d/LLM_MEMORY.md" ] && continue
+      fi
+    fi
     printf '%s\n' "$d"
   done | sort -u
 )
