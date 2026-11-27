@@ -1,4 +1,4 @@
-<!-- Playbook-Version: 18 -->
+<!-- Playbook-Version: 19 -->
 <!-- Playbook-Variant: online -->
 # AGENTS.md — Supreme Directives for AI Agents
 
@@ -59,7 +59,7 @@ Permissions follow stage regardless of tool/model; ONLY user may switch—agent 
 
 ### 2.1 Review Loop
 
-- Commits modifying files outside `LLM_MEMORY.md`/`README.md`/`ARCHIVE.md` (including code/config/`AGENTS.md`/`COMPONENT_MAP.md`/subfiles/plans/proposals; updating ONLY these 3 files is exempt): add no extra tag or column—log what & why (1 line) in `完成了什麼`, and start `下一個 agent 該做什麼` with `本次改動需要審閱：<檢查點/風險>`.
+- Commits modifying files outside `LLM_MEMORY.md`/`README.md`/`ARCHIVE.md` (including code/config/`COMPONENT_MAP.md`/subfiles/plans/proposals, or manual `AGENTS.md` edits; pure Branch C constitution sync of `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` from latest Playbook—and updating ONLY the 3 exempt files—requires no `LLM_MEMORY.md` entry or per-repo review): add no extra tag or column—log what & why (1 line) in `完成了什麼`, and start `下一個 agent 該做什麼` with `本次改動需要審閱：<檢查點/風險>`.
 - **Backlog Reminder**: If unresolved `需要審閱` (including〈阻塞點〉) `>= 2` on takeover, list upfront and ask user to sign off now or open a new session (including `/clear` context wipe) for review, **without hard-blocking current commit**; reminder NEVER waives review ("not hard-blocking" applies ONLY to commit—NEVER skip review to start work).
 - If top log or〈阻塞點〉has unresolved `需要審閱`, review first on takeover: run `git diff <交接基準 commit>..HEAD -- <this dir>` (path optional at repo root) to inspect prior edits (single new session may batch-review multiple items) **before overwriting baseline** (§0/§2), checking:
   1. Fits architecture/rules without breaking existing logic.
@@ -85,7 +85,7 @@ Stage tags: `[plan]` `[build]` `[maintain]`, takeover exception `[takeover]` (§
 - `README.md` is human-facing docs—NEVER write plans, status, or TODOs.
 - NEVER modify this file (`AGENTS.md`) without explicit user instruction.
 - Tool entry adapters (`CLAUDE.md`/`GEMINI.md`, etc.) ONLY reference `@./AGENTS.md` or tool-specific config—NEVER override/relax this file's rules (this file prevails).
-- Commits are hard-checked by `scripts/hooks/`; NEVER bypass with `--no-verify` (if unconfigured, see §0). ONLY scheduled/CI bots purely updating declared generated data files (e.g., `public/health.json`) are exempt from updating `LLM_MEMORY.md` (NEVER mix code/config edits; agent NEVER self-exempts).
+- Commits are hard-checked by `scripts/hooks/`; NEVER bypass with `--no-verify` (if unconfigured, see §0). ONLY (1) pure Branch C constitution sync of `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` (auto-exempt in `pre-commit`; `git log` tracks version history) and (2) scheduled/CI bots purely updating declared generated data files (e.g., `public/health.json`) are exempt from updating `LLM_MEMORY.md` (NEVER mix code/config edits; agent NEVER self-exempts).
 
 ## 5. Human Decisions & Corrections
 

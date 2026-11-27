@@ -5,7 +5,7 @@
 ## A. 目前狀態（每次交接必更新）
 
 - 目前階段: **[build]**
-- 最後更新: 2026-11-27 14:35 / 當時階段: build
+- 最後更新: 2026-11-27 14:50 / 當時階段: build
 - 交接基準 commit: e5960d7 [maintain] 自動巡檢更新鏡頭健康狀態
 - 進行中任務: v2 颱風戰情室（56 支 YouTube 鏡頭君）已審結上線；本機 `.env` 已配置 TDX API Key（僅本機離線建表用、不進版控／前端），完成全台監視器資料源調查與點數估算（詳見 `COMPONENT_MAP.md`）。待使用者確認是否切 `[plan]` 啟動下一期「全台道路 CCTV 整合」。
 - 待辦事項（下一期草案，尚未定案，動碼前請先確認階段與方案）:
@@ -13,10 +13,8 @@
   2. **多串流播放器擴充**：於 `VideoCard.tsx`、`FocusTheaterModal.tsx` 依 `stream.provider` 分流，補上 MJPEG 元件（縮圖優先、開播 `<img src>`、卸載清 `src=''` 釋放連線防佔滿同網域連線上限）與必要時 HLS 支援，外連亦改依 `provider` 導向。
   3. **數千點位地圖分層與拆檔效能設計**：保留 `src/data/webcams.json`（56 支 YouTube 鏡頭君）與每日 `check-webcams.mjs` 巡檢不變；道路 CCTV 獨立拆檔按需載入，設計「道路監視器開關」與 `zoom >= 11` 視野渲染／抽稀，避免全島視角紅海與 `WarRoomMap` 全表 `forEach` 拖慢。
   4. **低耗點維護策略**：平時瀏覽與看畫面全走本機靜態表直連原主機（0 點）；單支失效僅單縣刷新（`~0.0007 點`），全盤僅季更或半年更（年耗 `< 0.08 點`）。
-- 阻塞點:- 2026-11-26 09:00 待審下壓（基準 `e5960d7..dbf1fc8`）：核對 v15 升級、`COMPONENT_MAP.md` CCTV 台帳與 `LLM_MEMORY.md` 合併無漏；2026-11-26 10:35 v16 升級待審下壓（基準 `e5960d7..HEAD`）
-  - 2026-11-24 15:28 Online v15 升級待審下壓（基準 `e5960d7..d8b53ff`）
-  - 2026-11-24 14:07 Online v14 升級待審下壓（基準 `e5960d7..dbee16e`，母倉 14:31 已簽結並由 v15 覆蓋取代）
-
+- 阻塞點:
+  - 2026-11-26 09:00 待審下壓（基準 `e5960d7..dbf1fc8`）：核對 v15 升級、`COMPONENT_MAP.md` CCTV 台帳與 `LLM_MEMORY.md` 合併無漏
 > 長期架構、已校正氣象座標、外部資源實測台帳（含 Carto 浮水印踩坑與 Esri/NLSC 替代方案）與建置部署實況已更新於 `COMPONENT_MAP.md`。
   - 2026-11-27 10:11 需要審閱（基準 `e5960d7..HEAD`）：
     ### 2026-11-27 10:11 [maintain] Antigravity (Gemini 4 Neon)
@@ -38,26 +36,12 @@
 
 ## C. 交接日誌(只追加,不刪改;最新在最上,每筆一個小節)
 
-### 2026-11-27 14:35 [build] Antigravity (Gemini 4 Neon)
+### 2026-11-27 14:50 [build] Antigravity (Gemini 4 Neon)
 
-- 完成了什麼: 依 [套WF] 執行 Branch C 升級；依 D42 整份覆蓋 Online v17→v18（舊版留存 Git hash `05aa851`）；補配套 0 檔；原首筆待審依 §0 下壓入〈阻塞點〉並守原交接基準。
-- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 18`/`Playbook-Variant: online`，全文 `13,278 B`/95 行與 bundled 模板逐 byte 一致；日誌 `<10 KB`、本檔 `<16 KB`、本筆 `<=1200 B`。
-- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 核對 Online v18 條文一致且 A 區進行中任務未改寫。等待 new session（或 `/clear` 清空 context，建議換模型）審閱。
-- 地雷警告: 禁自審；未經 user 明示不 push；配套警告 無；hooksPath 保留。
-
-### 2026-11-27 10:11 [maintain] Antigravity (Gemini 4 Neon)
-
-- 完成了什麼: 依 user「推 全倉 套WF」將本 dir `AGENTS.md` 自 Online v16 整份覆蓋升至 v17（§5 禁假優缺點＋§1 `[build]` PDCA Act 閉環；無模板外自訂規則；覆蓋前 hash `8a3a517`）；原首筆待審依 §0 下壓入〈阻塞點〉並守原交接基準。為何改：全 8 倉同步 Online v17 憲法（D41）。
-- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 17`/`Playbook-Variant: online`，全文 `12,791 B`/93 行與母倉逐 byte 一致；日誌 `<10 KB`、本檔 `<16 KB`、本筆 `<=1200 B`。
-- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 核對 Online v17 條文一致且 A 區進行中任務未改寫。等待 new session（或 `/clear` 清空 context，建議換模型）審閱。
-- 地雷警告: 依 user 明示同步後 push；依 §2.1 本 context 禁自審。
-
-### 2026-11-26 10:35 [maintain] Antigravity (Gemini 4 Neon)
-
-- 完成了什麼: 依 user「我看過 同步8倉後推」將本 dir `AGENTS.md` 自 Online v15 整份覆蓋升至 v16（精簡英文＋`ARCHIVE` 16 KB 索引規則；無模板外自訂規則；覆蓋前 hash `d8b53ff`）；原首筆待審依 §0 下壓入〈阻塞點〉並守原交接基準（user 明示 `>16 KB` `ARCHIVE` 索引留便宜模型另做）。為何改：全 8 倉同步 Online v16 憲法（D39）。
-- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 16`/`Playbook-Variant: online`，全文 `12,405 B`/93 行與母倉逐 byte 一致；日誌 `<10 KB`、本檔 `<16 KB`、本筆 `<=1200 B`。
-- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 核對 Online v16 條文一致且 A 區進行中任務未改寫。等待 new session（或 `/clear` 清空 context，建議換模型）審閱。
-- 地雷警告: 依 user 明示同步後 push；依 §2.1 本 context 禁自審。
+- 完成了什麼: 依 user「開工 做完再推」將本倉全部工作流同步至 Online v19（D45 純憲法同步免寫記憶）並更新 `scripts/hooks/pre-commit`；依 user 指示清理 v10～v18 純升版洗版日誌與假下壓（保留全部實質專案紀錄與待審）。
+- 驗證方式: `AGENTS.md`（13,590 B/95L）與 `scripts/hooks/pre-commit` 與母倉逐 byte 一致；`workflow_scan` v19 clean、`check_hooks` OK、記憶檔全合規。
+- 下一個 agent 該做什麼: 本次改動需要審閱：核對 `scripts/hooks/pre-commit` 與記憶清理未傷任何專案待審（日後純同步憲法不再觸碰記憶檔）。等待 new session 審閱。
+- 地雷警告: 依 user 明示驗證後推送（D42，push≠審結）；禁自審。
 
 ### 2026-11-26 09:00 [build] Antigravity
 
@@ -65,13 +49,6 @@
 - 驗證方式: `git check-ignore -v .env` 命中 `.gitignore:9:.env`、`.env` 未進版控；國道/省道 XML 與 TDX `ChanghuaCounty` 實測 `200 OK`；Python 驗無衝突標記、`LLM_MEMORY.md` < 16 KB、`COMPONENT_MAP.md` 12.5 KB、C 區 < 10 KB、本筆 < 1200 B。
 - 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 批次核對 v15 升級、`COMPONENT_MAP.md` CCTV 台帳與 `LLM_MEMORY.md` 合併無漏。等待 new session（或 `/clear` 清空 context，建議換模型）審閱，再由 user 決定是否切 `[plan]`。
 - 地雷警告: 自檢原 `core.hooksPath` 空已設 `scripts/hooks` 並 `chmod +x`；禁 `.env` 入版控或前端讀 `TDX_*`。
-
-### 2026-11-24 15:28 [maintain] Antigravity (Gemini 4 Neon)
-
-- 完成了什麼: 依 user「再部屬12區」將本 dir `AGENTS.md` 自 Online v14 整份覆蓋升至 v15（無模板外自訂規則；覆蓋前 hash `dbee16e`）；原首筆 v14 待審依 §0 下壓入〈阻塞點〉並守原交接基準。為何改：全 12 倉同步 Online v15 憲法（D38）。
-- 驗證方式: `head -n 2 AGENTS.md` 為 `Playbook-Version: 15`/`Playbook-Variant: online`，全文 `10,219 B`/92 行與母倉逐 byte 一致；日誌 `<10 KB`、本檔 `<16 KB`、本筆 `<1200 B`。
-- 下一個 agent 該做什麼: 本次改動需要審閱：`git diff e5960d7..HEAD` 核對 Online v15 條文一致且 A 區進行中任務未改寫。等待 new session（或 `/clear` 清空 context，建議換模型）審閱。
-- 地雷警告: 未 push；依 §2.1 本 context 禁自審。
 
 ### 2026-11-24 14:07 [maintain] 使用工具: Antigravity (Gemini 4 Neon)
 

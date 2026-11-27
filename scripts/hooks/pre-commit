@@ -1,5 +1,7 @@
 #!/bin/sh
-# 強制要求每次 commit 都要更新「管轄該異動檔案的那份 LLM_MEMORY.md」（見 AGENTS.md §0）；不留例外通道。
+# 強制要求每次 commit 都要更新「管轄該異動檔案的那份 LLM_MEMORY.md」（見 AGENTS.md §0／§4）；
+# 唯一狹義自動豁免（v19／D45）：某工作流根目錄本次僅改動 AGENTS.md／CLAUDE.md／GEMINI.md（純憲法同步）時免改該層 LLM_MEMORY.md；
+# 只要同目錄混改任何其他檔案，該他檔仍會觸發硬擋。
 #
 # 巢狀判定（對應 AGENTS.md §4「作用範圍僅限本檔所在目錄」）：
 #   對每個異動檔案，從它所在目錄往上找「最近的一個工作流根目錄」，該目錄的 LLM_MEMORY.md 就是管轄它的記憶檔。
@@ -38,6 +40,17 @@ dirs=$(
   while IFS= read -r f; do
     d=${f%/*}
     [ "$d" = "$f" ] && d="."
+    b=${f##*/}
+    # 純憲法同步豁免（v19／D45）：工作流根目錄僅改 AGENTS.md／CLAUDE.md／GEMINI.md 時免改 LLM_MEMORY.md
+    case "$b" in
+      AGENTS.md|CLAUDE.md|GEMINI.md)
+        if [ "$d" = "." ]; then
+          [ -f "AGENTS.md" ] && [ -f "LLM_MEMORY.md" ] && continue
+        else
+          [ -f "$d/AGENTS.md" ] && [ -f "$d/LLM_MEMORY.md" ] && continue
+        fi
+        ;;
+    esac
     printf '%s\n' "$d"
   done | sort -u
 )
