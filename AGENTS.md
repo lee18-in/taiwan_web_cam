@@ -1,4 +1,4 @@
-<!-- Playbook-Version: 17 -->
+<!-- Playbook-Version: 18 -->
 <!-- Playbook-Variant: online -->
 # AGENTS.md — Supreme Directives for AI Agents
 
@@ -14,7 +14,7 @@ Before acting, read **this file's dir** `LLM_MEMORY.md` and `COMPONENT_MAP.md` (
 - `AGENTS.md` (this file): Immutable constitution, identical across repos; no project diffs.
 - `LLM_MEMORY.md` (decaying): Status, next steps, handover log; archived over time, NEVER store long-term tech facts.
 - `COMPONENT_MAP.md` (non-decaying): MUST start with〈六十秒進入狀況〉(add if missing; if file absent in this dir, create skeleton then read). Stores structure/cross-module contracts, build/test commands & code conventions (update live), decisions/rejections, env conditions, verification ledger; **store ONLY verified facts and finalized decisions—NEVER speculations or unsettled discussions**.
-- **Telegraphic Principle**: Memory files, `README.md`, and logs use telegraphic Traditional Chinese to save context/tokens—strip filler words, particles, empty verbs (進行/執行), and grammatical classifiers; write common single-token English words (code/test/config/script/path/data/file/dir/log/review/user) directly without forced translation; **NEVER omit** physical units, negative/mandatory modals, quantitative thresholds, or contract anchors.
+- **Telegraphic Principle**: Memory files, `README.md`, and logs use telegraphic Traditional Chinese to save context/tokens—strip filler words, particles, empty verbs (進行/執行), and grammatical classifiers; write common single-token English words (code/test/config/script/path/data/file/dir/log/review/user) directly without forced translation; **NEVER omit** physical units, negative/mandatory modals, quantitative thresholds, or contract anchors. Telegraphic file/log style does NOT apply to user replies (see §5).
 
 ### Anti-Bloat Maintenance
 
@@ -89,5 +89,7 @@ Stage tags: `[plan]` `[build]` `[maintain]`, takeover exception `[takeover]` (§
 
 ## 5. Human Decisions & Corrections
 
-- **Human Decisions (Global)**: Number pending items (`1.` `2.`…) and options (`1A` `1B`…), stating ONLY brief point, recommendation, and ultra-short real pros/cons (pure defects: state fix directly—NEVER list "zero change" as a pro or editing code/scripts as a con; ONLY real trade-offs or added per-turn always-read context/token cost are cons); expand details ONLY after user ruling or option callout (log capped at ~1200 bytes with summary only).
+- **Plain Replies**: Minimize output tokens while keeping replies understandable on first read. Use natural Traditional Chinese sentences. Lead with the conclusion; explain concrete impact and the next action when relevant. Cut repetition and filler, not necessary context or cause-and-effect. Avoid unexplained jargon and internal IDs; include technical details only when needed to decide, act, or verify.
+
+- **Human Decisions (Global)**: Number pending items (`1.` `2.`…) and options (`1A` `1B`…), stating ONLY brief point, recommendation, and brief, plain-language real pros/cons (pure defects: state fix directly—NEVER list "zero change" as a pro or editing code/scripts as a con; ONLY real trade-offs or added per-turn always-read context/token cost are cons); expand details ONLY after user ruling or option callout (log capped at ~1200 bytes with summary only).
 - **User Corrections (Current Turn's Just-Given Answer ONLY)**: If user flags an undisputed error, acknowledge briefly, fix directly, and continue—NEVER waste tokens explaining; committed handovers and〈已定案〉plans still follow §1/§2.1.
